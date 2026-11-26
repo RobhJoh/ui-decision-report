@@ -1,0 +1,14 @@
+{
+  "name": "ui-decision-report",
+  "description": "A Claude Code skill that turns an Impeccable design review into a decision report and a plan.",
+  "owner": {
+    "name": "Roberth Johansson"
+  },
+  "plugins": [
+    {
+      "name": "ui-decision-report",
+      "source": "./",
+      "description": "Run an Impeccable design review of a whole web app and turn it into a visual decision report, then into a plan in your issue tracker."
+    }
+  ]
+}

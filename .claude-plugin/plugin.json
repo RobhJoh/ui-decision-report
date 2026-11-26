@@ -1,0 +1,9 @@
+{
+  "name": "ui-decision-report",
+  "version": "0.1.0",
+  "description": "Run an Impeccable design review of a whole web app and turn it into a visual decision report, then into a plan in your issue tracker.",
+  "author": { "name": "Roberth Johansson" },
+  "repository": "https://github.com/RobhJoh/ui-decision-report",
+  "license": "MIT",
+  "keywords": ["design review", "ui", "impeccable", "report"]
+}

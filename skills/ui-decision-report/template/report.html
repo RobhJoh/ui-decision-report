@@ -1,0 +1,688 @@
+<title>__TITLE__</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: header, how-to-decide, summary, open questions, heat map, then one section per view: screenshot with pins left, finding cards right. */
+:root {
+  --bg: #f5f6f7; --surface: #ffffff; --sunk: #eaedf0; --fg: #16202b; --muted: #556270; --line: #d5dbe1;
+  --accent: #2f5fb3; --accent-fg: #ffffff;
+  --p0: #b3122e; --p1: #d0560b; --p2: #a87f00; --p3: #5d7186;
+  --s0: #c8324b; --s1: #e2774a; --s2: #d9b04a; --s3: #8fbb7d; --s4: #3f9a6b;
+  --d-fix: #c2302b; --d-later: #2f6fb3; --d-accept: #3f8f5f; --d-discuss: #8e55b0; --d-open: #b8c1ca;
+  --display: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10161c; --surface: #18212a; --sunk: #202b36; --fg: #e6ebf0; --muted: #9babbb; --line: #2d3a47;
+  --accent: #7fa8f0; --accent-fg: #0c1420;
+  --p0: #ff5d78; --p1: #ff8a45; --p2: #e9c03a; --p3: #8fa3b8;
+  --s0: #a8304a; --s1: #b5603a; --s2: #a88a33; --s3: #5f8a52; --s4: #2f7d55;
+  --d-fix: #ff6b66; --d-later: #6fa3f0; --d-accept: #5cc48f; --d-discuss: #c68be0; --d-open: #3b4957; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #10161c; --surface: #18212a; --sunk: #202b36; --fg: #e6ebf0; --muted: #9babbb; --line: #2d3a47;
+  --accent: #7fa8f0; --accent-fg: #0c1420;
+  --p0: #ff5d78; --p1: #ff8a45; --p2: #e9c03a; --p3: #8fa3b8;
+  --s0: #a8304a; --s1: #b5603a; --s2: #a88a33; --s3: #5f8a52; --s4: #2f7d55;
+  --d-fix: #ff6b66; --d-later: #6fa3f0; --d-accept: #5cc48f; --d-discuss: #c68be0; --d-open: #3b4957; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); margin: 0; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 28px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 32px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(28px, 4vw, 40px); }
+h2 { font-size: 24px; }
+h3 { font-size: 16px; font-family: var(--body); font-weight: 600; }
+.eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.lede { color: var(--muted); max-width: 72ch; margin: 8px 0 0; }
+code, .mono { font-family: var(--mono); font-size: .88em; }
+.num { font-variant-numeric: tabular-nums; }
+button, select, textarea, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent); }
+
+.banner { border: 1px solid var(--line); background: var(--sunk); padding: 10px 14px; border-radius: 6px; font-size: 14px; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.how > div { border-top: 4px solid var(--dc); background: var(--sunk); border-radius: 4px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
+.how p { margin: 0; font-size: 14px; }
+.muted { color: var(--muted); }
+.folds { display: grid; gap: 8px; }
+.fold { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 0 18px; }
+.fold > summary { cursor: pointer; padding-block: 14px; list-style: none; display: flex; align-items: center; gap: 10px; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+.fold[open] > summary::before { transform: rotate(90deg); }
+.fold > summary h2 { font-size: 16px; font-family: var(--body); font-weight: 600; }
+.fold[open] { padding-bottom: 18px; display: grid; gap: 14px; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.big { font: 700 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+.bar { display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: var(--sunk); }
+.bar span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.dims { display: grid; gap: 6px; font-size: 13px; }
+.dim { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.pips { display: inline-flex; gap: 3px; }
+.pips b { width: 14px; height: 8px; border-radius: 2px; background: var(--sunk); }
+.pips b.on { background: var(--fg); }
+
+.qsec { display: grid; gap: 16px; }
+.qsec .lede { margin-top: 4px; }
+.qlist { display: grid; gap: 20px; }
+.qcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 12px; min-width: 0; }
+.qcard.answered { border-color: var(--d-accept); }
+.qtitle { font-size: 18px; }
+.qwhy { font-size: 14px; color: var(--muted); margin: 0; max-width: 80ch; }
+.opts { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+.opt { display: grid; gap: 10px; align-content: start; border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+.opt-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: space-between; }
+.opt.chosen { border-color: var(--d-accept); box-shadow: 0 0 0 1px var(--d-accept); }
+.opt .lbl2 { font-weight: 600; font-size: 15px; }
+.opt .sub { font-size: 13px; color: var(--muted); margin: 0; }
+.opt .pick { justify-self: stretch; min-height: 44px; border: 2px solid var(--accent); background: var(--surface); color: var(--accent); border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .12s; }
+.opt .pick:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.opt.chosen .pick { background: var(--d-accept); border-color: var(--d-accept); color: #fff; }
+.opt.chosen .pick::before { content: "✓ "; }
+.opt .pick:disabled { cursor: default; opacity: .55; }
+.rec { font: 600 11px var(--body); letter-spacing: .04em; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); padding: 2px 8px; border-radius: 999px; }
+
+.frame { display: grid; gap: 6px; min-width: 0; }
+.frame-bar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; color: var(--muted); }
+.frame-bar button { border: 1px solid var(--line); background: var(--surface); border-radius: 5px; padding: 2px 8px; font: 500 12px var(--mono); cursor: pointer; }
+.frame-bar button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.frame-view { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.frame-view iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; background: #fff; }
+.frame-view.phone { max-width: 260px; }
+.frame-fallback { font-size: 13px; color: var(--muted); padding: 10px; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; }
+.pair figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+.pair figcaption { font: 600 11px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.pair img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+
+.heat-wrap { overflow-x: auto; }
+table.heat { border-collapse: separate; border-spacing: 3px; font-size: 13px; min-width: 760px; }
+.heat th { font: 600 11px/1.2 var(--mono); color: var(--muted); text-align: center; padding: 4px; vertical-align: bottom; }
+.heat th.row { text-align: left; font: 500 13px var(--mono); color: var(--fg); white-space: nowrap; }
+.heat th.row a { color: inherit; text-decoration: none; }
+.heat th.row a:hover { text-decoration: none; }
+.link-btn:hover { text-decoration: underline; }
+.heat td { width: 46px; height: 30px; text-align: center; border-radius: 4px; font: 600 13px var(--mono); color: #fff; }
+.heat td.na { background: var(--sunk); color: var(--muted); }
+.heat td.tot { background: transparent; color: var(--fg); text-align: right; width: 64px; }
+
+.controls { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; justify-content: space-between; }
+.progress { display: grid; gap: 5px; min-width: min(100%, 260px); flex: 1 1 260px; max-width: 420px; font-size: 14px; }
+.progress .bar { height: 6px; }
+.controls-main { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.next-open { border: 0; background: var(--accent); color: var(--accent-fg); border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: 14px; cursor: pointer; }
+.more { position: relative; font-size: 13px; }
+.more > summary { cursor: pointer; color: var(--accent); list-style: none; }
+.more > summary::-webkit-details-marker { display: none; }
+.more-body { position: absolute; right: 0; top: calc(100% + 8px); z-index: 6; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; width: max-content; max-width: min(92vw, 420px); box-shadow: 0 8px 24px rgb(0 0 0 / .12); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 11px; font-size: 13px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.controls label { font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.controls select { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; max-width: 220px; }
+
+.views { display: grid; gap: 64px; }
+.view { display: grid; gap: 12px; scroll-margin-top: 70px; }
+.view-title { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.view-title h2 { font-size: 22px; }
+.view-title .muted { font-size: 14px; }
+.view-sum { margin: 0; color: var(--muted); max-width: 80ch; }
+.view-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+.vp-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.vp-tabs button { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 3px 10px; font: 500 12px var(--mono); cursor: pointer; }
+.vp-tabs button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.job { margin: 0; font-size: 14px; }
+.mini { font-size: 14px; }
+.mini > summary { cursor: pointer; color: var(--accent); width: fit-content; }
+.mini[open] > summary { margin-bottom: 8px; }
+.about { color: var(--muted); }
+.about[open] { display: grid; gap: 8px; }
+.about ol { margin: 4px 0 0; padding-left: 20px; }
+.strengths { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; }
+.board { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.board.narrow { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); }
+.board.noshot { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 900px) { .board, .board.narrow { grid-template-columns: minmax(0, 1fr); } }
+.shot { position: sticky; top: 64px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); max-height: calc(100vh - 80px); overflow-y: auto; }
+@media (max-width: 900px) { .shot { position: static; max-height: 75vh; } }
+@media (max-width: 600px) { .controls { position: static; } }
+.shot-inner { position: relative; }
+.shot img { display: block; width: 100%; height: auto; }
+.box { position: absolute; border: 2px solid var(--p); border-radius: 4px; background: color-mix(in srgb, var(--p) 10%, transparent); pointer-events: none; opacity: 0; transition: opacity .15s; }
+.box.hl { opacity: 1; }
+.pin { position: absolute; transform: translate(-40%, -40%); width: 24px; height: 24px; border-radius: 50%; background: var(--p); color: #fff; font: 700 12px/24px var(--mono); text-align: center; border: 2px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .35); cursor: pointer; padding: 0; }
+.pin.hl { transform: translate(-40%, -40%) scale(1.25); }
+.cards { display: grid; gap: 16px; min-width: 0; }
+.card, .qcard { scroll-margin-top: 90px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--p); border-radius: 12px; padding: 20px; display: grid; gap: 16px; min-width: 0; }
+.card.hl { box-shadow: 0 0 0 2px var(--p); }
+.card-top { display: flex; gap: 10px; align-items: flex-start; }
+.card-top .n { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--p); color: #fff; font: 700 12px/26px var(--mono); text-align: center; margin-top: 1px; }
+.card-top .n.page { border-radius: 5px; }
+.card-title { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.card h3 { font-size: 18px; line-height: 1.3; text-wrap: balance; margin: 0; }
+.flags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.flags .theme { font-size: 13px; color: var(--muted); }
+.part { display: grid; gap: 4px; }
+.part h4, .decide h4 { margin: 0; }
+.part p { font-size: 15px; line-height: 1.5; max-width: 68ch; }
+.part.fix { border-left: 3px solid var(--accent); padding-left: 12px; }
+.part.fix .lbl { color: var(--accent); }
+.rec-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 14px; }
+.rec-k { color: var(--muted); }
+.rec-v { font-weight: 700; color: var(--fg); padding: 1px 8px; border: 2px dashed var(--dc); border-radius: 999px; }
+.rec-why { flex-basis: 100%; color: var(--muted); font-size: 13px; }
+.meta { font: 500 11px/1.5 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { font: 500 11px/1 var(--mono); padding: 4px 6px; border-radius: 3px; background: var(--sunk); color: var(--muted); }
+.tag.sev { background: var(--p); color: #fff; }
+.tag.hist { background: var(--accent); color: var(--accent-fg); }
+.tag.warn { background: var(--d-discuss); color: #fff; }
+.card p { margin: 0; font-size: 14px; }
+.card .lbl { font: 600 11px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-right: 6px; }
+.rule { font-size: 13px; color: var(--muted); display: grid; gap: 2px; }
+.extras { display: grid; gap: 8px; }
+.card p.qlink { font-size: 13px; color: var(--muted); }
+.applies { font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.decide { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+.seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+.seg button { min-height: 44px; border: 2px solid color-mix(in srgb, var(--dc) 45%, var(--line)); background: var(--surface); color: var(--fg); border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .12s, border-color .12s; }
+.seg button:hover:not(:disabled) { background: color-mix(in srgb, var(--dc) 14%, var(--surface)); border-color: var(--dc); }
+.seg button[aria-pressed="true"] { background: var(--dc); border-color: var(--dc); color: #fff; }
+.seg button[aria-pressed="true"]::before { content: "✓ "; }
+.seg button.sugg { border-style: dashed; border-color: var(--dc); }
+.seg button:disabled { cursor: default; opacity: .55; }
+.seg-note { font-size: 12px; color: var(--muted); }
+.decide textarea, .qcard textarea { width: 100%; min-height: 34px; resize: vertical; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); padding: 6px 8px; font-size: 13px; box-sizing: border-box; }
+.decide-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); }
+.foot-actions { display: inline-flex; flex-wrap: wrap; gap: 14px; }
+.link-btn { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font-size: 13px; text-decoration: underline; }
+.empty { color: var(--muted); font-size: 14px; padding: 10px 0; }
+
+table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 720px; }
+.drift th, .drift td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.drift th { font: 600 11px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.drift td:first-child { font: 500 12px var(--mono); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1 id="title"></h1>
+    <p class="lede" id="lede"></p>
+  </header>
+  <div class="banner" id="banner" hidden></div>
+  <div class="folds">
+    <details class="fold">
+      <summary><h2 id="how-h"></h2></summary>
+      <p class="lede" id="how-lede" style="margin:0"></p>
+      <div class="how" id="how"></div>
+    </details>
+    <details class="fold">
+      <summary><h2 id="over-h"></h2></summary>
+      <section class="summary" id="overview" aria-label="Summary"></section>
+      <div id="heat-sec" hidden>
+        <h3 id="heat-h"></h3>
+        <p class="lede" id="heat-lede" style="margin:0"></p>
+        <div class="heat-wrap"><table class="heat" id="heat"></table></div>
+        <div class="legend" id="heat-legend"></div>
+      </div>
+    </details>
+    <details class="fold" id="drift-sec" hidden>
+      <summary><h2 id="drift-h"></h2></summary>
+      <div style="overflow-x:auto"><table class="drift" id="drift"></table></div>
+    </details>
+  </div>
+  <div class="controls" id="controls"></div>
+  <section class="qsec" id="q-sec" aria-labelledby="q-h" hidden>
+    <div><h2 id="q-h"></h2><p class="lede" id="q-lede"></p></div>
+    <div class="qlist" id="qlist"></div>
+  </section>
+  <main id="views" class="views"></main>
+</div>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+(() => {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const L = {
+    en: {
+      how: 'How to decide', howLede: 'Every finding needs your decision: nothing counts until you click a status. The dashed button is Claude\'s recommendation. Open questions are answered with the option cards above the findings.',
+      fix: 'Fix', later: 'Later', accept: 'Accept', discuss: 'Discuss', open: 'Undecided',
+      fixD: 'Fix it in this round. Becomes a ready-to-build issue.', laterD: 'Worth doing, not now. Becomes a backlog issue.',
+      acceptD: 'Intentional or not worth it. Recorded so the next round does not raise it again.', discussD: 'Needs a conversation first. It comes back in a discussion round with variants.',
+      findings: 'Findings', decided: 'Decided', questions: 'Open questions', answered: 'answered',
+      qLede: 'Design choices the findings leave open. The tagged option is Claude\'s recommendation; pick the one you want.',
+      recommended: 'Recommended', recHint: 'Recommended: ', choose: 'Choose this', chosen: 'Chosen', heat: 'Heuristic scores', heatLede: 'Nielsen\'s ten heuristics, scored 0–4 per view. Click a view to jump to it.',
+      total: 'Total', drift: 'Where the app leaves its design rules', aspect: 'Aspect', view: 'View', says: 'The rules say', does: 'The app does', ref: 'Ref',
+      severity: 'Severity', status: 'Status', source: 'Source', all: 'All', allViews: 'All views', critique: 'Design review', audit: 'Technical audit', history: 'Round', onlyOpen: 'Only what is open',
+      new: 'New', remaining: 'Remaining', changed: 'Changed', why: 'Problem', fixL: 'Fix', yourDecision: 'Your decision', note: 'Note (saved when you leave the field)',
+      comment: 'Comment', clear: 'Clear decision', works: 'Works: ', overview: 'Overview and scores', nextOpen: 'Next undecided ↓', moreFilters: 'More filters', aboutView: 'About this view', addNote: '+ Add a note', showMockup: 'Mockup', job: 'Main job: ', inventory: 'What people can do and know here', wholeView: 'Whole view', noMatch: 'No findings match the filters.', none: 'No findings for this view.',
+      decidedIn: 'Settled by question', auditScore: 'Technical audit', someone: 'Someone', alsoFlagged: 'Also flagged by ', newFeature: 'New feature', appliesTo: 'Applies to: ', brand: 'Brand rule',
+      before: 'Before', after: 'After', now: 'Now', mockupFail: 'The mockup could not load here. Open it on claude.ai.',
+      verification: { done: 'Done', partial: 'Partly done', missing: 'Missing', regression: 'Regression' },
+      offline: 'Open this report on claude.ai to record decisions.', signedOut: 'Sign in on claude.ai to record decisions. You can still read the report.',
+      readOnly: 'You can read the decisions, but your access does not allow recording them.', notSaved: 'The decision was not saved. Try again.', loadFail: 'Decisions could not be loaded. Reload the page to try again.',
+      vpFindings: n => `${n} finding${n === 1 ? '' : 's'}`, ruleL: 'Design rule', saysL: 'Says: ', doesL: 'Does: ',
+      sevName: { P0: 'Blocking', P1: 'Major', P2: 'Minor', P3: 'Polish' },
+      H: ['Status visibility','Real-world match','Control & freedom','Consistency','Error prevention','Recognition','Efficiency','Minimalist design','Error recovery','Help & docs'],
+      dims: { accessibility: 'Accessibility', performance: 'Performance', theming: 'Theming', responsive: 'Responsive', integrity: 'Integrity' }
+    },
+    sv: {
+      how: 'Så beslutar du', howLede: 'Varje fynd behöver ditt beslut: inget räknas förrän du klickar på en status. Den streckade knappen är Claudes rekommendation. Öppna frågor besvaras med alternativkorten ovanför fynden.',
+      fix: 'Åtgärda', later: 'Senare', accept: 'Acceptera', discuss: 'Diskutera', open: 'Obeslutat',
+      fixD: 'Åtgärdas i den här omgången. Blir ett issue som är redo att bygga.', laterD: 'Värt att göra, men inte nu. Blir ett backlog-issue.',
+      acceptD: 'Avsiktligt eller inte värt det. Sparas så att nästa omgång inte tar upp det igen.', discussD: 'Behöver ett samtal först. Kommer tillbaka i en diskussionsrunda med varianter.',
+      findings: 'Fynd', decided: 'Beslutade', questions: 'Öppna frågor', answered: 'besvarade',
+      qLede: 'Designval som fynden lämnar öppna. Det märkta alternativet är Claudes rekommendation; välj det du vill ha.',
+      recommended: 'Rekommenderas', recHint: 'Rekommendation: ', choose: 'Välj detta', chosen: 'Valt', heat: 'Heuristiska poäng', heatLede: 'Nielsens tio heuristiker, 0–4 per vy. Klicka på en vy för att hoppa dit.',
+      total: 'Totalt', drift: 'Där appen avviker från sina designregler', aspect: 'Aspekt', view: 'Vy', says: 'Reglerna säger', does: 'Appen gör', ref: 'Ref',
+      severity: 'Allvar', status: 'Status', source: 'Källa', all: 'Alla', allViews: 'Alla vyer', critique: 'Designgranskning', audit: 'Teknisk granskning', history: 'Omgång', onlyOpen: 'Bara det som är öppet',
+      new: 'Nytt', remaining: 'Kvarstår', changed: 'Ändrat', why: 'Problem', fixL: 'Åtgärd', yourDecision: 'Ditt beslut', note: 'Anteckning (sparas när du lämnar fältet)',
+      comment: 'Kommentera', clear: 'Rensa beslutet', works: 'Fungerar: ', overview: 'Översikt och poäng', nextOpen: 'Nästa obeslutade ↓', moreFilters: 'Fler filter', aboutView: 'Om vyn', addNote: '+ Lägg till anteckning', showMockup: 'Mockup', job: 'Huvuduppgift: ', inventory: 'Vad man kan göra och veta här', wholeView: 'Hela vyn', noMatch: 'Inga fynd matchar filtren.', none: 'Inga fynd för den här vyn.',
+      decidedIn: 'Avgörs av fråga', auditScore: 'Teknisk granskning', someone: 'Någon', alsoFlagged: 'Flaggat även av ', newFeature: 'Ny funktion', appliesTo: 'Gäller: ', brand: 'Varumärkesregel',
+      before: 'Före', after: 'Efter', now: 'Nu', mockupFail: 'Mockupen kunde inte laddas här. Öppna den på claude.ai.',
+      verification: { done: 'Klart', partial: 'Delvis klart', missing: 'Saknas', regression: 'Regression' },
+      offline: 'Öppna rapporten på claude.ai för att spara beslut.', signedOut: 'Logga in på claude.ai för att spara beslut. Du kan fortfarande läsa rapporten.',
+      readOnly: 'Du kan läsa besluten, men din behörighet räcker inte för att spara dem.', notSaved: 'Beslutet sparades inte. Försök igen.', loadFail: 'Besluten kunde inte laddas. Ladda om sidan.',
+      vpFindings: n => `${n} fynd`, ruleL: 'Designregel', saysL: 'Säger: ', doesL: 'Gör: ',
+      sevName: { P0: 'Blockerande', P1: 'Stort', P2: 'Mindre', P3: 'Finputs' },
+      H: ['Systemstatus','Verklighetsmatchning','Kontroll och frihet','Konsekvens','Felförebyggande','Igenkänning','Effektivitet','Minimalistisk design','Felåterhämtning','Hjälp'],
+      dims: { accessibility: 'Tillgänglighet', performance: 'Prestanda', theming: 'Teman', responsive: 'Responsivitet', integrity: 'Integritet' }
+    }
+  };
+  const lang = D.meta.language === 'sv' ? 'sv' : 'en';
+  const T = L[lang];
+  const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
+  const SEV = ['P0','P1','P2','P3'];
+  const STATUSES = ['fix','later','accept','discuss'];
+  const $ = (s, r = document) => r.querySelector(s);
+  const el = (tag, attrs = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v !== null && v !== undefined && v !== false) e.setAttribute(k, v); } for (const k of kids.flat()) if (k != null) e.append(k); return e; };
+  const sevVar = s => `var(--${s.toLowerCase()})`;
+
+  // Project accent: colours and fonts from the project's tokens, when given.
+  const acc = D.meta.accent;
+  if (acc) {
+    const css = [], light = [], dark = [];
+    if (acc.color) light.push(`--accent:${acc.color}`); if (acc.colorFg) light.push(`--accent-fg:${acc.colorFg}`);
+    if (acc.colorDark) dark.push(`--accent:${acc.colorDark}`); if (acc.colorDarkFg) dark.push(`--accent-fg:${acc.colorDarkFg}`);
+    if (acc.display) light.push(`--display:${acc.display}`); if (acc.body) light.push(`--body:${acc.body}`); if (acc.mono) light.push(`--mono:${acc.mono}`);
+    if (light.length) css.push(`:root{${light.join(';')}}`);
+    if (dark.length) css.push(`@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${dark.join(';')}}}`, `:root[data-theme="dark"]{${dark.join(';')}}`);
+    document.head.append(el('style', { text: css.join('\n') }));
+    if (typeof acc.fontsHref === 'string' && acc.fontsHref.startsWith('https://fonts.googleapis.com/')) document.head.append(el('link', { rel: 'stylesheet', href: acc.fontsHref }));
+  }
+
+  let pending = false;
+  document.addEventListener('focusout', e => { if (pending && e.target.tagName === 'TEXTAREA') setTimeout(() => { if (document.activeElement?.tagName === 'TEXTAREA') return; pending = false; refresh(); }, 0); });
+  // Re-renders replace the DOM; keep the card the user is working in at the same place on screen, and its focus.
+  function keepPlace(fn) {
+    const active = document.activeElement;
+    const focusId = active && active !== document.body ? active.id : '';
+    const cards = [...document.querySelectorAll('.card[id], .qcard[id], section.view[id]')];
+    const mark = active?.closest?.('.card[id], .qcard[id]') ?? cards.find(e => e.getBoundingClientRect().bottom > 0);
+    const markId = mark?.id, top = mark?.getBoundingClientRect().top;
+    fn();
+    const again = markId && document.getElementById(markId);
+    if (again) scrollBy(0, again.getBoundingClientRect().top - top);
+    if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
+  }
+  const decisions = {}, answers = {};
+  let db = null, user = null, comments = null, me = null, canWrite = false;
+  const state = { sev: new Set(SEV), status: 'all', source: 'all', view: 'all', history: 'all', open: D.meta.stage === 'discussion' };
+
+  const views = D.views;
+  const viewById = id => views.find(v => v.id === id);
+  const screensOf = id => D.screens.filter(s => s.view === id);
+  const anchor = id => 'v-' + id.replace(/[^a-z0-9]+/gi, '-');
+  const statusOf = f => decisions[f.id]?.status || null;
+  const isOpen = f => !statusOf(f) || statusOf(f) === 'discuss';
+  const questionById = id => (D.questions ?? []).find(q => q.id === id);
+  const optionOf = q => answers[q.id]?.option || null;
+  const hasHistory = D.findings.some(f => f.history);
+
+  // Mockups: standalone HTML files published beside the page, shown at a phone or desktop width.
+  const mockCache = {};
+  const loadMock = file => mockCache[file] ??= fetch(file).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); });
+  const WIDTHS = { desktop: [1440, 900], phone: [390, 844] };
+  const frameMode = {};
+  function mockupFrame(file) {
+    const wrap = el('div', { class: 'frame' });
+    let mode = frameMode[file] ?? 'desktop';
+    const view = el('div', { class: 'frame-view' });
+    const bar = el('div', { class: 'frame-bar' }, Object.keys(WIDTHS).map(k => el('button', { type: 'button', 'aria-pressed': String(k === mode), onclick: e => { mode = frameMode[file] = k; bar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); draw(); } }, `${WIDTHS[k][0]} px`)));
+    const frame = el('iframe', { sandbox: '', title: file, loading: 'lazy' });
+    view.append(frame);
+    // The aspect ratio gives the frame its height before layout, so a re-render never collapses it.
+    const fit = () => { const [w, h] = WIDTHS[mode]; const s = view.clientWidth / w || 0; frame.style.width = w + 'px'; frame.style.height = h + 'px'; frame.style.transform = `scale(${s})`; };
+    function draw() { const [w, h] = WIDTHS[mode]; view.classList.toggle('phone', mode === 'phone'); view.style.aspectRatio = `${w} / ${h}`; fit(); }
+    new ResizeObserver(fit).observe(view);
+    loadMock(file).then(html => { frame.srcdoc = html; }).catch(() => { view.style.aspectRatio = ''; view.replaceChildren(el('p', { class: 'frame-fallback', text: T.mockupFail })); });
+    wrap.append(bar, view);
+    draw();
+    return wrap;
+  }
+
+  // Header
+  $('#eyebrow').textContent = [D.meta.project, D.meta.round ? `#${D.meta.round}` : null, D.meta.date].filter(Boolean).join(' · ');
+  $('#title').textContent = D.meta.title;
+  $('#lede').textContent = D.meta.lede ?? '';
+  $('#how-h').textContent = T.how; $('#how-lede').textContent = T.howLede;
+  $('#how').append(...STATUSES.map(k => el('div', { style: `--dc:var(--d-${k})` }, el('h3', { text: T[k] }), el('p', { text: T[k + 'D'] }))));
+
+  // Progress lives in the sticky bar: the one number that changes while the user decides.
+  function summary() {
+    const s = $('#progress'); if (!s) return; s.replaceChildren();
+    const total = D.findings.length, n = total || 1;
+    const count = k => D.findings.filter(f => statusOf(f) === k).length;
+    const decided = D.findings.filter(statusOf).length;
+    const qs = D.questions ?? [];
+    s.append(el('span', { class: 'progress-text' }, el('b', { class: 'num', text: `${decided} / ${total}` }), ` ${T.decided.toLowerCase()}`,
+        qs.length ? el('span', { class: 'muted' }, ` · ${qs.filter(optionOf).length} / ${qs.length} ${T.questions.toLowerCase()}`) : null),
+      el('div', { class: 'bar', title: [...STATUSES, 'open'].map(k => `${T[k]} ${k === 'open' ? total - decided : count(k)}`).join(' · ') },
+        [...STATUSES, 'open'].map(k => { const c = k === 'open' ? total - decided : count(k); return el('span', { style: `width:${100 * c / n}%;background:var(--d-${k})` }); })));
+  }
+
+  // Background numbers, shown once inside the "Overview" fold.
+  function overview() {
+    const s = $('#overview');
+    $('#over-h').textContent = T.overview;
+    const total = D.findings.length, n = total || 1, by = Object.fromEntries(SEV.map(k => [k, D.findings.filter(f => f.severity === k).length]));
+    s.append(el('div', { class: 'panel' }, el('h3', { text: T.findings }), el('div', { class: 'big', text: String(total) }),
+      el('div', { class: 'bar' }, SEV.map(k => el('span', { style: `width:${100 * by[k] / n}%;background:${sevVar(k)}`, title: `${k} ${by[k]}` }))),
+      el('div', { class: 'legend' }, SEV.map(k => el('span', {}, el('i', { style: `background:${sevVar(k)}` }), `${k} ${T.sevName[k]} · ${by[k]}`)))));
+    if (D.audit?.scores) {
+      const a = D.audit.scores, dims = Object.keys(T.dims);
+      const tot = dims.reduce((t, d) => t + (a[d] ?? 0), 0);
+      s.append(el('div', { class: 'panel' }, el('h3', { text: T.auditScore }), el('div', { class: 'big', text: `${tot} / 20` }),
+        el('div', { class: 'dims' }, dims.map(d => el('div', { class: 'dim', title: D.audit.notes?.[d] ?? '' }, el('span', { text: T.dims[d] }), el('span', { class: 'pips' }, [0,1,2,3].map(i => el('b', { class: i < (a[d] ?? 0) ? 'on' : '' }))))))));
+    }
+    if (hasHistory) {
+      const hs = ['new','remaining','changed'];
+      s.append(el('div', { class: 'panel' }, el('h3', { text: T.history }), el('div', { class: 'legend', style: 'font-size:15px;color:var(--fg)' }, hs.map(h => el('span', { text: `${T[h]} · ${D.findings.filter(f => f.history === h).length}` })))));
+    }
+  }
+
+  function questions() {
+    const qs = (D.questions ?? []).filter(q => !state.open || !optionOf(q) || q.round === D.meta.discussionRound);
+    $('#q-sec').hidden = !qs.length; if (!qs.length) return;
+    $('#q-h').textContent = T.questions; $('#q-lede').textContent = T.qLede;
+    const list = $('#qlist'); list.replaceChildren();
+    for (const q of qs) {
+      const cur = optionOf(q), a = answers[q.id] ?? {};
+      const card = el('article', { class: 'qcard' + (cur ? ' answered' : ''), id: 'q-' + q.id });
+      card.append(el('h3', { class: 'qtitle', text: q.question }));
+      if (q.why) card.append(el('p', { class: 'qwhy', text: q.why }));
+      card.append(el('div', { class: 'opts', role: 'group', 'aria-label': q.question }, q.options.map(o => el('div', { class: 'opt' + (cur === o.key ? ' chosen' : '') },
+        el('div', { class: 'opt-head' }, el('span', { class: 'lbl2', text: `${o.key.toUpperCase()}. ${o.label}` }), o.recommended ? el('span', { class: 'rec', text: T.recommended }) : null),
+        o.detail ? el('p', { class: 'sub', text: o.detail }) : null,
+        o.mockup ? mockupFrame(o.mockup) : null,
+        el('button', { id: 'o-' + q.id + '-' + o.key, class: 'pick', type: 'button', 'aria-pressed': String(cur === o.key), disabled: canWrite ? null : 'disabled', onclick: () => saveAnswer(q.id, { option: optionOf(q) === o.key ? null : o.key }) }, cur === o.key ? T.chosen : T.choose)))));
+      const [note, addNote] = noteField('q:' + q.id, 'qnote-' + q.id, a.note, v => saveAnswer(q.id, { note: v }));
+      const foot = el('div', { class: 'decide-foot' }, el('span', {}), el('span', { class: 'foot-actions' }, addNote, comments ? el('button', { class: 'link-btn', onclick: () => comments.openComposer({ element: card }).catch(() => {}) }, T.comment) : null));
+      card.append(note, foot);
+      whoLine(foot.firstChild, a);
+      list.append(card);
+    }
+  }
+
+  function heat() {
+    const scored = views.filter(v => v.scores);
+    if (!scored.length) return;
+    $('#heat-sec').hidden = false; $('#heat-h').textContent = T.heat; $('#heat-lede').textContent = T.heatLede;
+    const t = $('#heat');
+    t.append(el('tr', {}, el('th', {}), T.H.map((h, i) => el('th', { title: h }, `H${i + 1}`, el('br'), h.split(' ')[0])), el('th', { text: T.total })));
+    for (const v of scored) {
+      const vals = T.H.map((_, i) => v.scores['h' + (i + 1)]), got = vals.filter(x => x != null);
+      t.append(el('tr', {}, el('th', { class: 'row' }, el('a', { href: '#' + anchor(v.id), text: viewTitle(v) })),
+        vals.map((x, i) => x == null ? el('td', { class: 'na', title: `${T.H[i]}: n/a`, text: '–' }) : el('td', { style: `background:var(--s${x})`, title: `${T.H[i]}: ${x}/4`, text: String(x) })),
+        el('td', { class: 'tot num', text: `${got.reduce((a, b) => a + b, 0)}/${got.length * 4}` })));
+    }
+    $('#heat-legend').append(...[0,1,2,3,4].map(i => el('span', {}, el('i', { style: `background:var(--s${i})` }), String(i))));
+  }
+  const viewTitle = v => [v.label, v.role, v.state].filter(Boolean).join(' · ');
+
+  // Sticky bar: progress, the open-only switch and the view picker. Rarer filters fold away.
+  function controls() {
+    const c = $('#controls');
+    const sel = (id, label, key, opts) => el('label', { for: id }, label, el('select', { id, onchange: e => { state[key] = e.target.value; render(); } }, opts.map(([v, l]) => el('option', { value: v, text: l }))));
+    c.append(el('div', { class: 'progress', id: 'progress' }));
+    const main = el('div', { class: 'controls-main' },
+      el('button', { class: 'next-open', type: 'button', onclick: nextOpen }, T.nextOpen),
+      el('button', { class: 'chip', 'aria-pressed': String(state.open), onclick: e => { state.open = !state.open; e.currentTarget.setAttribute('aria-pressed', String(state.open)); questions(); render(); } }, T.onlyOpen),
+      sel('f-view', T.view, 'view', [['all', T.allViews], ...views.map(v => [v.id, viewTitle(v)])]));
+    const more = el('details', { class: 'more' }, el('summary', { text: T.moreFilters }),
+      el('div', { class: 'more-body' },
+        el('div', { class: 'chips', role: 'group', 'aria-label': T.severity }, SEV.map(k => el('button', { class: 'chip', 'aria-pressed': 'true', onclick: e => { state.sev.has(k) ? state.sev.delete(k) : state.sev.add(k); e.currentTarget.setAttribute('aria-pressed', state.sev.has(k)); render(); } }, `${k} ${T.sevName[k]}`))),
+        sel('f-status', T.status, 'status', [['all', T.all], ['open', T.open], ...STATUSES.map(k => [k, T[k]])]),
+        sel('f-source', T.source, 'source', [['all', T.all], ['critique', T.critique], ['audit', T.audit]]),
+        hasHistory ? sel('f-hist', T.history, 'history', [['all', T.all], ['new', T.new], ['remaining', T.remaining], ['changed', T.changed]]) : null));
+    main.append(more);
+    c.append(main);
+  }
+
+  // Jump to the next finding or question still waiting on the user, below the current position, wrapping around.
+  function nextOpen() {
+    const waiting = [...document.querySelectorAll('.qcard[id], .card[id]')].filter(c => c.id.startsWith('q-')
+      ? !optionOf(questionById(c.id.slice(2)))
+      : isOpen(D.findings.find(f => 'f-' + f.id === c.id)));
+    if (!waiting.length) return;
+    const bar = $('#controls').getBoundingClientRect().bottom;
+    const next = waiting.find(c => c.getBoundingClientRect().top > bar + 40) ?? waiting[0];
+    next.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    next.querySelector('.seg button, .pick')?.focus({ preventScroll: true });
+  }
+
+  // A note stays folded behind a link until it has text or the user opens it.
+  const noteOpen = {};
+  function noteField(key, id, value, onSave) {
+    const ta = el('textarea', { id, 'aria-label': T.note, placeholder: canWrite ? T.note : '', disabled: canWrite ? null : 'disabled' });
+    ta.value = value ?? '';
+    ta.addEventListener('change', () => onSave(ta.value));
+    ta.hidden = !(value || noteOpen[key]);
+    const btn = el('button', { class: 'link-btn', type: 'button', onclick: () => { noteOpen[key] = true; ta.hidden = false; btn.hidden = true; ta.focus(); } }, T.addNote);
+    btn.hidden = !ta.hidden || !canWrite;
+    return [ta, btn];
+  }
+
+  // Mockups inside a finding fold away; the frame is built the first time it opens.
+  const mockOpen = new Set();
+  function mockupFold(label, file) {
+    const d = el('details', { class: 'mini' }, el('summary', { text: label }));
+    const build = () => { if (!d.dataset.built) { d.dataset.built = '1'; d.append(mockupFrame(file)); } };
+    d.addEventListener('toggle', () => { if (d.open) { mockOpen.add(file); build(); } else mockOpen.delete(file); });
+    if (mockOpen.has(file)) { d.open = true; build(); }
+    return d;
+  }
+
+  const filtered = () => state.open || state.sev.size < SEV.length || state.status !== 'all' || state.source !== 'all' || state.history !== 'all';
+  const visible = f => state.sev.has(f.severity) && (state.view === 'all' || f.view === state.view)
+    && (!state.open || isOpen(f))
+    && (state.source === 'all' || f.source === state.source)
+    && (state.history === 'all' || f.history === state.history)
+    && (state.status === 'all' || (state.status === 'open' ? !statusOf(f) : statusOf(f) === state.status));
+
+  const vpChoice = {};
+  function render() {
+    const root = $('#views'); root.replaceChildren();
+    for (const v of views) {
+      if (state.view !== 'all' && state.view !== v.id) continue;
+      const screens = screensOf(v.id);
+      const matching = D.findings.filter(f => f.view === v.id && visible(f));
+      if (filtered() && !matching.length) continue;
+      const sec = el('section', { class: 'view', id: anchor(v.id) });
+      let vp = null, sc = null;
+      if (screens.length) {
+        const withMatches = screens.find(s => matching.some(f => f.viewport === s.viewport));
+        vp = vpChoice[v.id] && screens.some(s => s.viewport === vpChoice[v.id]) ? vpChoice[v.id] : (withMatches ?? screens[0]).viewport;
+        sc = screens.find(s => s.viewport === vp);
+      }
+      const inVp = f => !vp || !f.viewport || f.viewport === vp || !screens.some(s => s.viewport === f.viewport);
+      const all = D.findings.filter(f => f.view === v.id && inVp(f));
+      const list = all.filter(visible).sort((a, b) => a.severity.localeCompare(b.severity));
+      const vpLabel = s => { const n = D.findings.filter(f => f.view === v.id && f.viewport === s.viewport && visible(f)).length; return `${s.viewport} ${s.w}px · ${T.vpFindings(n)}`; };
+      sec.append(el('div', { class: 'view-head' },
+        el('div', { class: 'view-title' }, el('h2', { text: v.label }), el('span', { class: 'muted', text: [v.role, v.state].filter(Boolean).join(' · ') })),
+        screens.length > 1 ? el('div', { class: 'vp-tabs', role: 'group', 'aria-label': 'Viewport' }, screens.map(s => el('button', { 'aria-pressed': String(s.viewport === vp), onclick: () => { vpChoice[v.id] = s.viewport; render(); $('#' + anchor(v.id)).scrollIntoView(); } }, vpLabel(s))))
+          : sc ? el('span', { class: 'tag', text: `${vp} ${sc.w}px` }) : null));
+      if (v.summary) sec.append(el('p', { class: 'view-sum', text: v.summary }));
+      if (v.job || v.inventory?.length || v.strengths?.length) sec.append(el('details', { class: 'mini about' }, el('summary', { text: T.aboutView }),
+        v.job ? el('p', { class: 'job' }, el('b', { text: T.job }), v.job) : null,
+        v.inventory?.length ? el('div', {}, el('b', { text: T.inventory }), el('ol', {}, v.inventory.map(t => el('li', { text: t })))) : null,
+        v.strengths?.length ? el('ul', { class: 'strengths' }, v.strengths.map(t => el('li', { text: T.works + t }))) : null));
+      const inner = sc ? el('div', { class: 'shot-inner' }, el('img', { src: sc.file, alt: `${viewTitle(v)} · ${vp}`, loading: 'lazy', width: sc.w, height: sc.h })) : null;
+      const cards = el('div', { class: 'cards' });
+      list.forEach((f, i) => {
+        const n = i + 1, p = sevVar(f.severity);
+        const at = inner ? (f.viewport ? (f.viewport === vp ? f.pin : null) : f.pins?.[vp]) : null;
+        const pinned = !!at;
+        let box = null, pin = null;
+        const card = findingCard(f, n, p, pinned);
+        if (pinned) {
+          box = el('div', { class: 'box', style: `--p:${p};left:${at.x}%;top:${at.y}%;width:${at.w}%;height:${at.h}%` });
+          pin = el('button', { class: 'pin', style: `--p:${p};left:${at.x}%;top:${at.y}%`, 'aria-label': `${n}: ${f.title}`, text: String(n), onclick: () => card.scrollIntoView({ behavior: 'smooth', block: 'center' }) });
+          inner.append(box, pin);
+        }
+        const on = x => () => [box, pin, card].forEach(e => e?.classList.toggle('hl', x));
+        for (const e of [pin, card]) if (e) { e.addEventListener('mouseenter', on(true)); e.addEventListener('mouseleave', on(false)); e.addEventListener('focusin', on(true)); e.addEventListener('focusout', on(false)); }
+        cards.append(card);
+      });
+      if (!list.length) cards.append(el('p', { class: 'empty', text: all.length ? T.noMatch : T.none }));
+      sec.append(el('div', { class: 'board' + (!inner ? ' noshot' : vp === 'desktop' ? '' : ' narrow') }, inner ? el('div', { class: 'shot' }, inner) : null, cards));
+      root.append(sec);
+    }
+  }
+
+  function findingCard(f, n, p, pinned) {
+    const card = el('article', { class: 'card', style: `--p:${p}`, id: 'f-' + f.id });
+    // Reading order: what it is, the problem, the fix, the evidence, then the decision. Metadata last.
+    card.append(el('header', { class: 'card-top' },
+      el('span', { class: 'n' + (pinned ? '' : ' page'), title: pinned ? '' : T.wholeView, text: pinned ? String(n) : '▣' }),
+      el('div', { class: 'card-title' },
+        el('h3', { text: f.title }),
+        el('div', { class: 'flags' }, el('span', { class: 'tag sev', text: `${f.severity} ${T.sevName[f.severity]}` }),
+          f.theme ? el('span', { class: 'theme', text: f.theme }) : null,
+          f.history ? el('span', { class: 'tag hist', text: T[f.history] }) : null,
+          f.verification ? el('span', { class: 'tag hist', text: T.verification[f.verification] }) : null,
+          f.newFeature ? el('span', { class: 'tag warn', text: T.newFeature }) : null,
+          f.brand ? el('span', { class: 'tag warn', text: T.brand }) : null))));
+    card.append(el('section', { class: 'part' }, el('h4', { class: 'lbl', text: T.why }), el('p', { text: f.why })));
+    card.append(el('section', { class: 'part fix' }, el('h4', { class: 'lbl', text: T.fixL }), el('p', { text: f.fix })));
+    if (f.appliesTo?.length) card.append(el('div', { class: 'applies' }, T.appliesTo, f.appliesTo.map(id => el('a', { href: '#' + anchor(id), class: 'tag', text: viewById(id) ? viewTitle(viewById(id)) : id }))));
+    if (f.before) card.append(el('div', { class: 'pair' },
+      el('figure', {}, el('figcaption', { text: T.before }), el('img', { src: f.before, alt: `${T.before}: ${f.title}`, loading: 'lazy' })),
+      f.after ? el('figure', {}, el('figcaption', { text: T.now }), el('img', { src: f.after, alt: `${T.now}: ${f.title}`, loading: 'lazy' })) : null));
+    if (f.question && questionById(f.question)) card.append(el('p', { class: 'qlink' }, `${T.decidedIn}: `, el('a', { href: '#q-' + f.question, text: questionById(f.question).question })));
+    const extras = [
+      f.mockup?.after ? mockupFold(`${T.showMockup} · ${T.after}`, f.mockup.after) : null,
+      f.mockup?.before ? mockupFold(`${T.showMockup} · ${T.before}`, f.mockup.before) : null,
+      f.rule ? el('details', { class: 'mini' }, el('summary', { text: `${T.ruleL} ${f.rule.ref ?? ''}`.trim() }),
+        el('div', { class: 'rule' }, el('div', {}, el('b', { text: T.saysL }), f.rule.says), el('div', {}, el('b', { text: T.doesL }), f.rule.does))) : null,
+    ].filter(Boolean);
+    if (extras.length) card.append(el('div', { class: 'extras' }, extras));
+    card.append(decideBlock(f, card));
+    card.append(el('footer', { class: 'meta' }, [T[f.source] ?? f.source, f.category, f.alsoFlaggedBy?.length ? T.alsoFlagged + f.alsoFlaggedBy.join(', ') : null, f.id].filter(Boolean).join(' · ')));
+    return card;
+  }
+
+  // The decision part of a finding card, rebuilt on its own so a decision never reloads the card's images.
+  function decideBlock(f, card) {
+    const d = decisions[f.id] ?? {}, cur = statusOf(f);
+    const [note, addNote] = noteField('f:' + f.id, 'note-' + f.id, d.note, v => save(f.id, { note: v }));
+    const foot = el('div', { class: 'decide-foot' }, el('span', {}),
+      el('span', { class: 'foot-actions' }, addNote, cur && canWrite ? el('button', { class: 'link-btn', onclick: () => save(f.id, { status: null }) }, T.clear) : null,
+        comments ? el('button', { class: 'link-btn', onclick: () => comments.openComposer({ element: card }).catch(() => {}) }, T.comment) : null));
+    const block = el('section', { class: 'decide' },
+      f.suggested ? el('div', { class: 'rec-line', style: `--dc:var(--d-${f.suggested})` },
+        el('span', { class: 'rec-k', text: T.recHint.replace(/[:\s]+$/, '') }),
+        el('span', { class: 'rec-v', text: T[f.suggested] }),
+        f.suggestedWhy ? el('span', { class: 'rec-why', text: f.suggestedWhy }) : null) : null,
+      el('div', { class: 'seg', role: 'group', 'aria-label': T.status }, STATUSES.map(k => el('button', { id: 's-' + f.id + '-' + k, type: 'button', class: k === f.suggested ? 'sugg' : '', style: `--dc:var(--d-${k})`, 'aria-pressed': String(cur === k), disabled: canWrite ? null : 'disabled', onclick: () => save(f.id, { status: k }) }, T[k]))),
+      note, foot);
+    whoLine(foot.firstChild, d);
+    return block;
+  }
+
+  async function whoLine(span, d) {
+    if (!d?.at) { span.textContent = ''; return; }
+    let name = '';
+    try { if (user && d.by) { const ps = await user.profiles([d.by]); name = ps[d.by]?.name || ''; } } catch {}
+    span.textContent = `${name || T.someone} · ${new Date(d.at).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`;
+  }
+
+  async function write(coll, id, cur, patch) {
+    if (!db) return;
+    const next = { ...cur, ...patch, by: me, at: new Date().toISOString() };
+    try { await db.collection(coll).doc(id).set(next); }
+    catch (e) { showBanner(e?.code === 'not_granted' ? T.readOnly : T.notSaved); }
+  }
+  const save = (id, patch) => write('decisions', id, { status: decisions[id]?.status ?? null, note: decisions[id]?.note ?? '' }, patch);
+  const saveAnswer = (id, patch) => write('answers', id, { option: answers[id]?.option ?? null, note: answers[id]?.note ?? '' }, patch);
+
+  function showBanner(t) { const b = $('#banner'); b.textContent = t; b.hidden = false; }
+
+  function drift() {
+    const rows = D.findings.filter(f => f.rule);
+    if (!rows.length) return;
+    $('#drift-sec').hidden = false; $('#drift-h').textContent = T.drift;
+    const t = $('#drift');
+    t.append(el('tr', {}, [T.aspect, T.view, T.says, T.does, T.ref].map(h => el('th', { text: h }))));
+    for (const f of [...rows].sort((a, b) => (a.category ?? '').localeCompare(b.category ?? ''))) t.append(el('tr', {}, el('td', { text: f.category ?? '' }), el('td', { class: 'mono', text: viewById(f.view) ? viewTitle(viewById(f.view)) : f.view }), el('td', { text: f.rule.says }), el('td', { text: f.rule.does }), el('td', { class: 'mono', text: f.rule.ref ?? '' })));
+  }
+
+  function renderAll() { summary(); questions(); render(); }
+  overview(); heat(); controls(); drift(); renderAll();
+
+  // After a decision, update the cards in place. Only filters that hide decided items need a full render.
+  function refresh() {
+    if (state.open || state.status !== 'all') { keepPlace(renderAll); return; }
+    keepPlace(() => {
+      summary();
+      for (const q of D.questions ?? []) {
+        const card = document.getElementById('q-' + q.id); if (!card) continue;
+        const cur = optionOf(q);
+        card.classList.toggle('answered', !!cur);
+        card.querySelectorAll('.opt').forEach((o, i) => {
+          const on = cur === q.options[i].key, b = o.querySelector('.pick');
+          o.classList.toggle('chosen', on); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? T.chosen : T.choose;
+        });
+        const note = card.querySelector('textarea'); if (note !== document.activeElement) note.value = answers[q.id]?.note ?? '';
+        whoLine(card.querySelector('.decide-foot').firstChild, answers[q.id]);
+      }
+      for (const f of D.findings) {
+        const card = document.getElementById('f-' + f.id);
+        card?.querySelector('.decide').replaceWith(decideBlock(f, card));
+      }
+    });
+  }
+
+  function listen(coll, store) {
+    db.collection(coll).onSnapshot(snap => {
+      for (const k of Object.keys(store)) delete store[k];
+      for (const doc of snap.docs) if (doc.exists) store[doc.id] = doc.data();
+      if (document.activeElement?.tagName === 'TEXTAREA') { pending = true; summary(); return; }
+      refresh();
+    }, () => showBanner(T.loadFail));
+  }
+
+  (async () => {
+    const c = window.claude; if (!c?.use) { showBanner(T.offline); return; }
+    const [d, u, cm] = await Promise.all([c.use('db'), c.use('user'), c.use('comments')]);
+    user = u; comments = cm;
+    if (!d) { showBanner(T.signedOut); renderAll(); return; }
+    db = d;
+    try { me = u ? await u.id() : null; } catch {}
+    canWrite = true;
+    try { if (u && (await u.can?.('data.write')) === false) canWrite = false; } catch {}
+    if (!canWrite) showBanner(T.readOnly);
+    renderAll();
+    listen('decisions', decisions);
+    listen('answers', answers);
+  })();
+})();
+</script>
