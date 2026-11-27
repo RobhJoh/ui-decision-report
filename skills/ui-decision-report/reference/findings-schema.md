@@ -42,8 +42,10 @@ The one file a round revolves around. Reviewers return pieces of it, synthesis m
       "why": "The menu says X, the tab says Y.", "findings": ["orders-start-name"],
       "options": [
         { "key": "a", "label": "Översikt", "detail": "One line on the trade-off.", "recommended": true,
-          "mockup": "mockups/Q1/a.html" },
-        { "key": "b", "label": "Start", "detail": "…", "mockup": "mockups/Q1/b.html" }
+          "mockup": "mockups/Q1/a.jpg",            // the zoom: the changed part only
+          "mockupView": "mockups/Q1/a-vy.html",     // the full view, behind a link
+          "madeUp": "the date and the sixth row" }, // invented content, printed under the zoom
+        { "key": "b", "label": "Start", "detail": "…", "mockup": "mockups/Q1/b.jpg", "mockupView": "mockups/Q1/b-vy.html" }
       ] }
   ],
   "findings": [
@@ -64,8 +66,11 @@ The one file a round revolves around. Reviewers return pieces of it, synthesis m
       "appliesTo": ["orders-admin", "orders-admin-empty"],  // cross-cutting findings
       "newFeature": false,                       // true: only a new feature solves it
       "brand": false,                            // true: caused by a locked brand element
-      "mockup": { "after": "mockups/orders-status-ambiguous/after.html" },   // layout and hierarchy findings
-      "question": "Q1",                          // an open question settles it
+      "mockup": { "after": "mockups/orders-status-ambiguous/after.jpg",          // layout and hierarchy findings: the zoom
+                  "afterView": "mockups/orders-status-ambiguous/after-vy.html", // and the full view
+                  "madeUp": "…" },
+      "question": "Q1",                          // an open question settles it; its answer makes the finding fix
+      "finalFix": "…",                            // hand-off: the one criterion when an answer or note changes the fix
       "history": "new",                          // follow-up rounds: "new" | "remaining" | "changed"
       "verification": "done",                    // verify rounds: "done" | "partial" | "missing" | "regression"
       "before": "verify/orders-status-ambiguous.before.jpg", "after": "verify/orders-status-ambiguous.after.jpg"
@@ -78,25 +83,27 @@ The one file a round revolves around. Reviewers return pieces of it, synthesis m
 
 - **ids** are lower-case ASCII slugs that say what the item is about (`orders-status-ambiguous`), never counters. Once published they are final. A follow-up round reuses the earlier id for the same problem.
 - **severity** uses Impeccable's scale: P0 Blocking, P1 Major, P2 Minor, P3 Polish.
-- **suggested** is your recommendation, shown as a dashed button. It never counts as a decision.
+- **suggested** is your recommendation, shown as a label under its button. It never counts as a decision.
   - `fix`: the answer is known and belongs in this round.
   - `later`: worth doing, but not now (large refactor, low value, blocked, or a new feature).
   - `accept`: intentional, a locked brand element, or a placeholder that other work replaces.
   - `discuss`: a product or behaviour question with no clear answer. When the open part is a choice between concrete design alternatives, write a question instead, link the finding to it, and suggest `fix`.
 - **pin** marks one element. Leave it out for findings about the whole view; the card then shows ▣ instead of a number.
-- **mockup** files are full-view standalone HTML (see `synthesis.md`). Sketches are not used.
+- **mockup** is a pair: a zoom image (`.jpg`, `.png`, `.webp`) of the changed part, and the full view as standalone HTML in `mockupView` / `afterView` / `beforeView` (see `synthesis.md`). A mockup without a zoom may be the HTML alone; it then shows in a scaled frame. Sketches are not used.
+- **question** links a finding to the question that settles it, and the question lists it in `findings`. Set both.
+- **finalFix** is written at hand-off, never before (see `tracker.md`).
 - **theme** names the plan task the finding lands in.
 
 ## Decisions in the Artifact
 
 The published report writes to its database:
 
-- `decisions/<findingId>`: `{ status, note, by, at }`. A null `status` means undecided.
+- `decisions/<findingId>`: `{ status, note, via, by, at }`. A null `status` means undecided. `via` (`"Q14 a"`) marks a `fix` that the answer to a question set; a status the user clicks clears it.
 - `answers/<questionId>`: `{ option, note, by, at }`. A null `option` means unanswered.
 
-Read both collections with `ArtifactData` `list`, and write them to `decisions.json` in your scratchpad, in the shape `open-items.mjs` and `writeback.mjs` take:
+Read both collections with `ArtifactData` `list`, and write them to `<round>/.work/decisions.json`, in the shape `open-items.mjs` and `writeback.mjs` take:
 
 ```json
-{ "decisions": { "<findingId>": { "status": "later", "note": "…" } },
+{ "decisions": { "<findingId>": { "status": "later", "note": "…", "via": null } },
   "answers": { "Q1": { "option": "b", "note": "" } } }
 ```

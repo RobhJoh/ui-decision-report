@@ -25,8 +25,8 @@ writeFileSync(join(roundDir, 'report.html'), html);
 
 const files = [...new Set([
   ...data.screens.map(s => s.file),
-  ...data.findings.flatMap(f => [f.mockup?.before, f.mockup?.after, f.before, f.after]),
-  ...(data.questions ?? []).flatMap(q => q.options.map(o => o.mockup)),
+  ...data.findings.flatMap(f => [f.mockup?.before, f.mockup?.after, f.mockup?.beforeView, f.mockup?.afterView, f.before, f.after]),
+  ...(data.questions ?? []).flatMap(q => q.options.flatMap(o => [o.mockup, o.mockupView])),
 ].filter(Boolean))];
 console.log(`Built ${join(roundDir, 'report.html')}: ${data.findings.length} findings, ${(data.questions ?? []).length} questions, ${files.length} files to publish beside the page.`);
 console.log('Publish with files: ' + JSON.stringify(Object.fromEntries(files.map(f => [f, join(roundDir, f)]))));

@@ -16,6 +16,11 @@
 //       Renders a standalone mockup at one width, to check it looks right.
 //   node capture.mjs crop <imageFile> <x,y,w,h> <outFile>
 //       Cuts a region (percent of the image, as in a pin) with a margin around it.
+//   node capture.mjs zoom <htmlFile> <outFile.jpg> <width> <selector | x,y,w,h> [pad]
+//       Renders a mockup at <width> and cuts out the changed part at twice the pixel density:
+//       the element <selector> matches, or the rectangle x,y,w,h in CSS pixels of the page, plus [pad]
+//       pixels around it (default 24). Prints the rectangle it used, so the other options of the same
+//       question can be cut with exactly the same one.
 //
 // capture.json:
 //   { "baseUrl": "http://localhost:5173",
@@ -23,7 +28,11 @@
 //     "viewports": { "desktop": { "w": 1440, "h": 900 }, "phone": { "w": 390, "h": 844 } },
 //     "pages": [ { "view": "<view id>", "path": "/orders", "role": "<role>"?, "viewports": ["desktop"],
 //                  "waitFor": "<selector>"?, "actions": [ <action> ]? } ] }
-// action: { "click": sel } | { "fill": sel, "value": text } | { "press": key } | { "waitFor": sel } | { "goto": path }
+// action: { "click": sel } | { "fill": sel, "value": text } | { "focus": sel }
+//       | { "press": key, "on": sel? }        key press, on the focused element or on <sel>
+//       | { "waitFor": sel } | { "waitForText": text } | { "goto": path }
+//       | { "evaluate": "<JavaScript run in the page>" }
+//   An SVG control such as g[role=slider] often ignores click(): use focus, then press (ArrowRight, Enter).
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -39,8 +48,11 @@ async function runActions(page, actions, baseUrl) {
   for (const a of actions ?? []) {
     if (a.click) await page.click(a.click);
     else if (a.fill) await page.fill(a.fill, a.value ?? '');
-    else if (a.press) await page.keyboard.press(a.press);
+    else if (a.focus) await page.focus(a.focus);
+    else if (a.press) { if (a.on) await page.press(a.on, a.press); else await page.keyboard.press(a.press); }
     else if (a.waitFor) await page.waitForSelector(a.waitFor, { timeout: 15000 });
+    else if (a.waitForText) await page.getByText(a.waitForText).first().waitFor({ timeout: 15000 });
+    else if (a.evaluate) await page.evaluate(a.evaluate);
     else if (a.goto) await page.goto(new URL(a.goto, baseUrl ?? page.url()).href, { waitUntil: 'networkidle' });
     else throw new Error(`unknown action ${JSON.stringify(a)}`);
   }
@@ -173,6 +185,27 @@ if (cmd === 'login') {
   await page.screenshot({ path: a3, clip, fullPage: true, type: 'jpeg', quality: 82 });
   await browser.close();
   console.log(`ok   ${a3}`);
+} else if (cmd === 'zoom') {
+  if (!a1 || !a2 || !a3 || !a4) { console.error('Usage: node capture.mjs zoom <htmlFile> <outFile.jpg> <width> <selector | x,y,w,h> [pad]'); process.exit(2); }
+  const pad = Number(process.argv[7] ?? 24);
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ viewport: { width: +a3, height: 900 }, deviceScaleFactor: 2 });
+  await page.goto(pathToFileURL(resolve(a1)).href, { waitUntil: 'networkidle' });
+  await page.evaluate(() => document.fonts?.ready);
+  let box;
+  if (/^\d+(\.\d+)?(,\d+(\.\d+)?){3}$/.test(a4)) { const [x, y, width, height] = a4.split(',').map(Number); box = { x, y, width, height }; }
+  else {
+    const el = page.locator(a4).first();
+    if (!(await el.count())) { await browser.close(); console.error(`no element matches "${a4}" in ${a1}`); process.exit(1); }
+    await el.scrollIntoViewIfNeeded();
+    box = await el.evaluate(e => { const r = e.getBoundingClientRect(); return { x: r.left + scrollX, y: r.top + scrollY, width: r.width, height: r.height }; });
+  }
+  const size = await page.evaluate(() => ({ W: document.documentElement.scrollWidth, H: document.documentElement.scrollHeight }));
+  const x = Math.max(0, Math.floor(box.x - pad)), y = Math.max(0, Math.floor(box.y - pad));
+  const clip = { x, y, width: Math.min(size.W - x, Math.ceil(box.width + 2 * pad)), height: Math.min(size.H - y, Math.ceil(box.height + 2 * pad)) };
+  await page.screenshot({ path: a2, clip, fullPage: true, type: 'jpeg', quality: 85 });
+  await browser.close();
+  console.log(`ok   ${a2}  rect=${clip.x},${clip.y},${clip.width},${clip.height}  (pass this rect with pad 0 to cut the other options the same way)`);
 } else {
-  console.error('Usage: node capture.mjs login | shoot | pins | snap | crop  (see the header of this file)'); process.exit(2);
+  console.error('Usage: node capture.mjs login | shoot | pins | snap | crop | zoom  (see the header of this file)'); process.exit(2);
 }

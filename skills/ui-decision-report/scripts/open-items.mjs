@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 // Reports what is still open in a round from the decisions read back from the Artifact:
 // findings without a decision, findings marked discuss, and questions without an answer.
+// A finding whose question is answered counts as fix (see decisions.mjs).
 // Usage: node open-items.mjs <roundDir> <decisions.json>   (exit 0 when nothing is open)
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { statusOf } from './decisions.mjs';
 
 const [roundDir, decisionsPath] = process.argv.slice(2);
 if (!roundDir || !decisionsPath) { console.error('Usage: node open-items.mjs <roundDir> <decisions.json>'); process.exit(2); }
 const data = JSON.parse(readFileSync(join(roundDir, 'findings.json'), 'utf8'));
 const got = JSON.parse(readFileSync(decisionsPath, 'utf8'));
-const undecided = data.findings.filter(f => !got.decisions?.[f.id]?.status);
-const discuss = data.findings.filter(f => got.decisions?.[f.id]?.status === 'discuss');
+const status = f => statusOf(f, got, data.questions).status;
+const undecided = data.findings.filter(f => !status(f));
+const discuss = data.findings.filter(f => status(f) === 'discuss');
 const unanswered = (data.questions ?? []).filter(q => !got.answers?.[q.id]?.option);
 const withNotes = data.findings.filter(f => got.decisions?.[f.id]?.note?.includes('?'));
 const show = (title, list, fmt) => { if (list.length) console.log(`${title} (${list.length}):\n` + list.map(x => '- ' + fmt(x)).join('\n')); };

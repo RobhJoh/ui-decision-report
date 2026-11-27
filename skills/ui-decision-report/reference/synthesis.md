@@ -15,7 +15,7 @@ Merge `parts/*.json` into `<round>/findings.json` (shape in `findings-schema.md`
 
 - **Themes**: rename the reviewers' themes into the units the plan will build. Use a shared building block ("Page header", "Date and money formats") or a view area ("Order page"). Each finding gets exactly one theme.
 - **Recommendation**: check each `suggested` against the schema's rules and give it a one-line `suggestedWhy`. Be decisive. `discuss` is for open product or behaviour questions, not for findings you are unsure of.
-- **Questions**: turn `questionCandidates` worth the user's time into `questions`. Each gets 2–4 options, one of them recommended, and links to the findings it settles.
+- **Questions**: turn `questionCandidates` worth the user's time into `questions`. Each gets 2–4 options, one of them recommended. Link it both ways: the ids from the candidate's `findings` go in the question's `findings`, and each of those findings gets `question` set to the question's id. The report uses that link: an answer turns the linked findings into `fix` per the chosen option.
 - **History** (follow-up rounds): every finding has `history`. For earlier `fix` findings that no reviewer reported again, check the new screenshots, and add the ones still there as `remaining`.
 - Fill `meta` (accent colour and fonts from the project's tokens) and copy `screens.json` into `screens`.
 
@@ -32,9 +32,16 @@ Stop at gate 2. Change the findings as the user asks before building mockups.
 
 ## Mockups
 
-Real, full-view HTML mockups at both widths, never sketches. Build them for:
+Real mockups, never sketches. Build them for:
 
 - every option of a question whose options look different;
-- every finding with category `layout` or `hierarchy`, as `mockup.after`. The screenshot is the before. Add `mockup.before` only when the screenshot cannot show the current state.
+- every finding with category `layout` or `hierarchy`, as an "after". The screenshot is the before. Add a "before" only when the screenshot cannot show the current state.
 
-Paths: `mockups/<finding-id>/after.html` and `mockups/<question-id>/<option-key>.html`. Spawn one mockup builder per area in one message ([`reviewer-brief.md`](reviewer-brief.md)), then open two or three of the results yourself with `capture.mjs snap` before building the report.
+Each one is a pair:
+
+- **the full view**: standalone HTML of the whole view with the change in place, readable at 390 and 1440 px: `mockups/<question-id>/<option-key>-vy.html`, `mockups/<finding-id>/after-vy.html`;
+- **the zoom**: an image of just the changed part, cut from the full view with `capture.mjs zoom`: `<option-key>.jpg`, `after.jpg`. This is what the user compares, so the change must fill it. Cut every option of one question with the same rectangle (`zoom` prints it), unless the options change different places.
+
+In `findings.json`: an option's `mockup` is the zoom and `mockupView` the full view; a finding's `mockup.after` is the zoom and `mockup.afterView` the full view (`before` and `beforeView` the same way). Copy each builder's list of invented content into `madeUp` on the option or on the finding's `mockup`; the report prints it under the image.
+
+Spawn one mockup builder per area in one message ([`reviewer-brief.md`](reviewer-brief.md)). Open two or three zooms yourself before building the report, and check that the change is what fills them.

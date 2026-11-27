@@ -6,6 +6,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { STATUSES } from './validate.mjs';
+import { statusOf, needsFinalFix } from './decisions.mjs';
 
 const [roundDir, decisionsPath] = process.argv.slice(2);
 if (!roundDir || !decisionsPath) { console.error('Usage: node writeback.mjs <roundDir> <decisions.json>'); process.exit(2); }
@@ -15,10 +16,11 @@ const got = JSON.parse(readFileSync(decisionsPath, 'utf8'));
 const errors = [], undecided = [], unanswered = [];
 
 for (const f of data.findings) {
-  const d = got.decisions?.[f.id] ?? {};
+  const d = statusOf(f, got, data.questions);
   if (!d.status) { undecided.push(f.id); continue; }
   if (!STATUSES.includes(d.status)) errors.push(`decision for ${f.id} has unknown status "${d.status}"`);
-  f.decision = { status: d.status, note: d.note ?? '' };
+  f.decision = { status: d.status, note: d.note };
+  if (d.via) f.decision.via = d.via;
 }
 for (const q of data.questions ?? []) {
   const a = got.answers?.[q.id] ?? {};
@@ -36,8 +38,8 @@ writeFileSync(path, JSON.stringify(data, null, 2));
 
 const sv = data.meta.language === 'sv';
 const W = sv
-  ? { findings: 'Fynd', questions: 'Frågor', status: { fix: 'Åtgärda', later: 'Senare', accept: 'Acceptera', discuss: 'Diskutera' }, why: 'Varför', fix: 'Åtgärd', decision: 'Beslut', recommended: 'rekommendation', note: 'Anteckning', report: 'Rapport', rule: 'Designregel', says: 'säger', does: 'gör', answer: 'Svar', noTheme: 'Övrigt', decidedBy: 'Avgörs av', newFeatures: 'Nya funktioner (utanför omfånget)', open: 'Fortfarande öppna', appliesTo: 'gäller', alsoFlaggedBy: 'flaggat även av', verification: 'Kontroll' }
-  : { findings: 'Findings', questions: 'Questions', status: { fix: 'Fix', later: 'Later', accept: 'Accept', discuss: 'Discuss' }, why: 'Why', fix: 'Fix', decision: 'Decision', recommended: 'recommended', note: 'Note', report: 'Report', rule: 'Design rule', says: 'says', does: 'does', answer: 'Answer', noTheme: 'Other', decidedBy: 'Settled by', newFeatures: 'New features (out of scope)', open: 'Still open', appliesTo: 'applies to', alsoFlaggedBy: 'also flagged by', verification: 'Check' };
+  ? { findings: 'Fynd', questions: 'Frågor', status: { fix: 'Åtgärda', later: 'Senare', accept: 'Acceptera', discuss: 'Diskutera' }, why: 'Varför', fix: 'Åtgärd', decision: 'Beslut', recommended: 'rekommendation', note: 'Anteckning', report: 'Rapport', rule: 'Designregel', says: 'säger', does: 'gör', answer: 'Svar', noTheme: 'Övrigt', decidedBy: 'Avgörs av', via: 'enligt', newFeatures: 'Nya funktioner (utanför omfånget)', open: 'Fortfarande öppna', appliesTo: 'gäller', alsoFlaggedBy: 'flaggat även av', verification: 'Kontroll' }
+  : { findings: 'Findings', questions: 'Questions', status: { fix: 'Fix', later: 'Later', accept: 'Accept', discuss: 'Discuss' }, why: 'Why', fix: 'Fix', decision: 'Decision', recommended: 'recommended', note: 'Note', report: 'Report', rule: 'Design rule', says: 'says', does: 'does', answer: 'Answer', noTheme: 'Other', decidedBy: 'Settled by', via: 'per', newFeatures: 'New features (out of scope)', open: 'Still open', appliesTo: 'applies to', alsoFlaggedBy: 'also flagged by', verification: 'Check' };
 const count = s => data.findings.filter(f => f.decision.status === s).length;
 const viewName = id => { const v = data.views.find(x => x.id === id); return v ? [v.label, v.role, v.state].filter(Boolean).join(' · ') : id; };
 const line = f => `- **${f.severity} · ${f.title}** (\`${f.id}\`, ${viewName(f.view)}${f.viewport ? ` @ ${f.viewport}` : ''}, ${f.source}${f.history ? `, ${f.history}` : ''})`;
@@ -72,12 +74,12 @@ for (const t of themes) {
     lines.push(line(f));
     if (f.appliesTo?.length) lines.push(`  - ${W.appliesTo}: ${f.appliesTo.map(viewName).join(', ')}`);
     lines.push(`  - ${W.why}: ${f.why}`);
-    lines.push(`  - ${W.fix}: ${f.fix}`);
+    lines.push(`  - ${W.fix}: ${f.finalFix ?? f.fix}`);
     if (f.rule) lines.push(`  - ${W.rule}${f.rule.ref ? ` ${f.rule.ref}` : ''}: ${W.says} "${f.rule.says.replace(/[.]\s*$/, '')}", ${W.does} "${f.rule.does.replace(/[.]\s*$/, '')}"`);
     if (f.alsoFlaggedBy?.length) lines.push(`  - ${W.alsoFlaggedBy}: ${f.alsoFlaggedBy.join(', ')}`);
     if (f.verification) lines.push(`  - ${W.verification}: ${f.verification}`);
     if (f.question) lines.push(`  - ${W.decidedBy} ${f.question}`);
-    lines.push(`  - ${W.decision}: **${W.status[f.decision.status]}**${f.decision.status !== f.suggested ? ` (${W.recommended}: ${W.status[f.suggested]})` : ''}${f.decision.note ? ` — ${f.decision.note}` : ''}`);
+    lines.push(`  - ${W.decision}: **${W.status[f.decision.status]}**${f.decision.via ? ` ${W.via} ${f.decision.via}` : ''}${f.decision.status !== f.suggested ? ` (${W.recommended}: ${W.status[f.suggested]})` : ''}${f.decision.note ? ` — ${f.decision.note}` : ''}`);
   }
   lines.push('');
 }
@@ -86,4 +88,6 @@ if (features.length) { lines.push(`## ${W.newFeatures}`, ''); for (const f of fe
 
 writeFileSync(join(roundDir, 'findings.md'), lines.join('\n'));
 const changed = data.findings.filter(f => f.decision.status !== f.suggested).length;
+const pending = data.findings.filter(f => needsFinalFix(f, data.questions));
+if (pending.length) console.log(`Write finalFix for ${pending.length} finding(s) whose answer or note changes the fix, then run again:\n- ` + pending.map(f => `${f.id}${f.decision.via ? ` (${f.decision.via})` : f.question ? ` (${f.question} ${data.questions.find(q => q.id === f.question).answer.option})` : ''}${f.decision.note ? ` — ${f.decision.note}` : ''}`).join('\n- '));
 console.log(`Wrote findings.md and updated findings.json: ${changed} of ${data.findings.length} decisions differ from the recommendation; ` + STATUSES.map(s => `${s} ${count(s)}`).join(', ') + '.');

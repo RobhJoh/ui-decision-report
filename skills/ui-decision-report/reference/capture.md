@@ -16,18 +16,18 @@ Each view is one `pages` entry in `capture.json` (format in the header of `captu
 
 - a path or query that shows it (`/orders?status=none`, an id that does not exist for 404);
 - seed data or a fixture the project already has for it;
-- `actions` (click, fill, press, waitFor, goto) after the page loads.
+- `actions` after the page loads: click, fill, focus, press, waitFor, waitForText, goto and evaluate (format in the header of `capture.mjs`). An SVG control such as `g[role=slider]` often ignores a click: focus it and press keys (`ArrowRight`, `Enter`) instead.
 
-Interaction runs only against a local database, and preferably undoable steps. Ask before any action that writes to a shared or deployed environment, and never write to production.
+Interaction runs only against a local database, and preferably undoable steps. Open a confirm dialog when the state needs it, but never confirm a destructive action. Ask before any action that writes to a shared or deployed environment, and never write to production.
 
 ## Sign-in
 
-One session per role, saved once and reused for every page of that role. Parallel sign-ins get throttled. Keep session files in your scratchpad, never in the repo: they hold cookies.
+One session per role, saved once and reused for every page of that role. Parallel sign-ins get throttled. Keep session files in `<round>/.work/sessions/`, which git ignores: they hold cookies, and the scratchpad may be gone after a break.
 
 Offer the user, per role:
 
 - **They sign in**: start `node <skill-dir>/scripts/capture.mjs login <url> <state-file>` in the background; they sign in in the window that opens and close it.
-- **Test account**: only on a local or staging host, with accounts from the project's seed, fixture or example-config files. Write the sign-in steps as an actions list to a file in your scratchpad, and run `login <url> <state-file> <steps-file>`. Never print the values in chat.
+- **Test account**: only on a local or staging host, with accounts from the project's seed, fixture or example-config files. Write the sign-in steps as an actions list to a file in `<round>/.work/`, and run `login <url> <state-file> <steps-file>`. Never print the values in chat.
 - **Public only**: no sign-in; the views behind it are left out.
 
 ## Shooting
@@ -38,6 +38,7 @@ Run `capture.mjs shoot <round>`. Known traps:
 - Wait for the real content: set `waitFor` to a selector that only exists once data has loaded. Responsive layouts often keep hidden copies of the same element; add `>> visible=true` (`"text=Operationer >> visible=true"`) when a wait times out on a page that did render.
 - Apps that redirect by time of day, feature flag or onboarding state: reach the view with the query or setting that switches the redirect off, and note it in the view list.
 - Cookie banners, toasts and dev overlays cover content: dismiss them with `actions`.
+- A dev server can stop while you work (the app itself, a crash, a restart). Check that `baseUrl` answers before each `shoot`, and start it again when it does not. Use `capture.mjs` or Node to reach it: a sandbox may block `curl` to localhost.
 - Fixed bars (bottom navigation, sticky headers) can land mid-image in full-page screenshots. That is an artefact of the screenshot, not a defect. Say so in the reviewer briefs.
 
 ## Checking

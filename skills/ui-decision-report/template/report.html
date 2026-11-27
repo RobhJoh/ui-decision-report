@@ -174,7 +174,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .part.fix .lbl { color: var(--accent); }
 .rec-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 14px; }
 .rec-k { color: var(--muted); }
-.rec-v { font-weight: 700; color: var(--fg); padding: 1px 8px; border: 2px dashed var(--dc); border-radius: 999px; }
+.rec-v { font-weight: 700; color: var(--fg); }
 .rec-why { flex-basis: 100%; color: var(--muted); font-size: 13px; }
 .meta { font: 500 11px/1.5 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
 .tags { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -194,7 +194,24 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .seg button:hover:not(:disabled) { background: color-mix(in srgb, var(--dc) 14%, var(--surface)); border-color: var(--dc); }
 .seg button[aria-pressed="true"] { background: var(--dc); border-color: var(--dc); color: #fff; }
 .seg button[aria-pressed="true"]::before { content: "✓ "; }
-.seg button.sugg { border-style: dashed; border-color: var(--dc); }
+.seg-item { display: grid; gap: 4px; align-content: start; }
+.rec-tag { font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--muted); text-align: center; }
+.rec-tag::before { content: "↑ "; }
+.made-up { margin: 0; font-size: 12px; color: var(--muted); font-style: italic; }
+.via { margin: 0; font-size: 13px; color: var(--muted); }
+.save { color: var(--muted); }
+.save.failed { color: var(--d-fix); font-weight: 600; }
+img.zoom { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.themes { display: grid; gap: 12px; }
+.themes h2 { font-size: 18px; }
+.themes .lede { margin-top: 2px; font-size: 14px; }
+.theme-list { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.theme-btn { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; min-width: 170px; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 14px; }
+.theme-btn[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.theme-count { color: var(--muted); }
+.theme-bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--sunk); overflow: hidden; }
+.theme-bar i { display: block; height: 100%; background: var(--d-accept); }
+.theme-btn.done .theme-name::after { content: " ✓"; color: var(--d-accept); }
 .seg button:disabled { cursor: default; opacity: .55; }
 .seg-note { font-size: 12px; color: var(--muted); }
 .decide textarea, .qcard textarea { width: 100%; min-height: 34px; resize: vertical; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); padding: 6px 8px; font-size: 13px; box-sizing: border-box; }
@@ -239,6 +256,7 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
     </details>
   </div>
   <div class="controls" id="controls"></div>
+  <nav class="themes" id="themes" aria-labelledby="themes-h" hidden><div><h2 id="themes-h"></h2><p class="lede" id="themes-lede"></p></div><div class="theme-list" id="theme-list"></div></nav>
   <section class="qsec" id="q-sec" aria-labelledby="q-h" hidden>
     <div><h2 id="q-h"></h2><p class="lede" id="q-lede"></p></div>
     <div class="qlist" id="qlist"></div>
@@ -252,13 +270,13 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
   const D = JSON.parse(document.getElementById('data').textContent);
   const L = {
     en: {
-      how: 'How to decide', howLede: 'Every finding needs your decision: nothing counts until you click a status. The dashed button is Claude\'s recommendation. Open questions are answered with the option cards above the findings.',
+      how: 'How to decide', howLede: 'Every finding needs your decision: nothing counts until you click a status. The label under a button marks Claude\'s recommendation. Answering a question sets the findings it settles to Fix; you can still choose another status on each.',
       fix: 'Fix', later: 'Later', accept: 'Accept', discuss: 'Discuss', open: 'Undecided',
       fixD: 'Fix it in this round. Becomes a ready-to-build issue.', laterD: 'Worth doing, not now. Becomes a backlog issue.',
       acceptD: 'Intentional or not worth it. Recorded so the next round does not raise it again.', discussD: 'Needs a conversation first. It comes back in a discussion round with variants.',
       findings: 'Findings', decided: 'Decided', questions: 'Open questions', answered: 'answered',
       qLede: 'Design choices the findings leave open. The tagged option is Claude\'s recommendation; pick the one you want.',
-      recommended: 'Recommended', recHint: 'Recommended: ', choose: 'Choose this', chosen: 'Chosen', heat: 'Heuristic scores', heatLede: 'Nielsen\'s ten heuristics, scored 0–4 per view. Click a view to jump to it.',
+      recommended: 'Recommended', recHint: 'Recommended: ', recTag: 'Recommended', inFullView: 'Show in the full view', madeUp: 'Invented in the mockup: ', saved: 'Saved ✓', saving: 'Saving…', saveFailed: 'Not saved. Click again.', undecidedN: 'undecided', themesH: 'Themes', themesLede: 'Jump to a theme. Each finding is still decided on its own.', via: 'per', allThemes: 'All themes', choose: 'Choose this', chosen: 'Chosen', heat: 'Heuristic scores', heatLede: 'Nielsen\'s ten heuristics, scored 0–4 per view. Click a view to jump to it.',
       total: 'Total', drift: 'Where the app leaves its design rules', aspect: 'Aspect', view: 'View', says: 'The rules say', does: 'The app does', ref: 'Ref',
       severity: 'Severity', status: 'Status', source: 'Source', all: 'All', allViews: 'All views', critique: 'Design review', audit: 'Technical audit', history: 'Round', onlyOpen: 'Only what is open',
       new: 'New', remaining: 'Remaining', changed: 'Changed', why: 'Problem', fixL: 'Fix', yourDecision: 'Your decision', note: 'Note (saved when you leave the field)',
@@ -274,13 +292,13 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
       dims: { accessibility: 'Accessibility', performance: 'Performance', theming: 'Theming', responsive: 'Responsive', integrity: 'Integrity' }
     },
     sv: {
-      how: 'Så beslutar du', howLede: 'Varje fynd behöver ditt beslut: inget räknas förrän du klickar på en status. Den streckade knappen är Claudes rekommendation. Öppna frågor besvaras med alternativkorten ovanför fynden.',
+      how: 'Så beslutar du', howLede: 'Varje fynd behöver ditt beslut: inget räknas förrän du klickar på en status. Etiketten under en knapp visar Claudes rekommendation. Ett svar på en fråga sätter fynden den avgör till Åtgärda; du kan fortfarande välja en annan status på varje fynd.',
       fix: 'Åtgärda', later: 'Senare', accept: 'Acceptera', discuss: 'Diskutera', open: 'Obeslutat',
       fixD: 'Åtgärdas i den här omgången. Blir ett issue som är redo att bygga.', laterD: 'Värt att göra, men inte nu. Blir ett backlog-issue.',
       acceptD: 'Avsiktligt eller inte värt det. Sparas så att nästa omgång inte tar upp det igen.', discussD: 'Behöver ett samtal först. Kommer tillbaka i en diskussionsrunda med varianter.',
       findings: 'Fynd', decided: 'Beslutade', questions: 'Öppna frågor', answered: 'besvarade',
       qLede: 'Designval som fynden lämnar öppna. Det märkta alternativet är Claudes rekommendation; välj det du vill ha.',
-      recommended: 'Rekommenderas', recHint: 'Rekommendation: ', choose: 'Välj detta', chosen: 'Valt', heat: 'Heuristiska poäng', heatLede: 'Nielsens tio heuristiker, 0–4 per vy. Klicka på en vy för att hoppa dit.',
+      recommended: 'Rekommenderas', recHint: 'Rekommendation: ', recTag: 'Rekommendation', inFullView: 'Visa i hela vyn', madeUp: 'Påhittat i mockupen: ', saved: 'Sparat ✓', saving: 'Sparar…', saveFailed: 'Sparades inte. Klicka igen.', undecidedN: 'utan beslut', themesH: 'Teman', themesLede: 'Hoppa till ett tema. Varje fynd beslutas fortfarande för sig.', via: 'enligt', allThemes: 'Alla teman', choose: 'Välj detta', chosen: 'Valt', heat: 'Heuristiska poäng', heatLede: 'Nielsens tio heuristiker, 0–4 per vy. Klicka på en vy för att hoppa dit.',
       total: 'Totalt', drift: 'Där appen avviker från sina designregler', aspect: 'Aspekt', view: 'Vy', says: 'Reglerna säger', does: 'Appen gör', ref: 'Ref',
       severity: 'Allvar', status: 'Status', source: 'Källa', all: 'Alla', allViews: 'Alla vyer', critique: 'Designgranskning', audit: 'Teknisk granskning', history: 'Omgång', onlyOpen: 'Bara det som är öppet',
       new: 'Nytt', remaining: 'Kvarstår', changed: 'Ändrat', why: 'Problem', fixL: 'Åtgärd', yourDecision: 'Ditt beslut', note: 'Anteckning (sparas när du lämnar fältet)',
@@ -334,7 +352,7 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
   }
   const decisions = {}, answers = {};
   let db = null, user = null, comments = null, me = null, canWrite = false;
-  const state = { sev: new Set(SEV), status: 'all', source: 'all', view: 'all', history: 'all', open: D.meta.stage === 'discussion' };
+  const state = { theme: null, sev: new Set(SEV), status: 'all', source: 'all', view: 'all', history: 'all', open: D.meta.stage === 'discussion' };
 
   const views = D.views;
   const viewById = id => views.find(v => v.id === id);
@@ -382,10 +400,26 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
     const count = k => D.findings.filter(f => statusOf(f) === k).length;
     const decided = D.findings.filter(statusOf).length;
     const qs = D.questions ?? [];
-    s.append(el('span', { class: 'progress-text' }, el('b', { class: 'num', text: `${decided} / ${total}` }), ` ${T.decided.toLowerCase()}`,
+    s.append(el('span', { class: 'progress-text' }, el('b', { class: 'num', text: String(decided) }), ` ${T.decided.toLowerCase()} · `, el('b', { class: 'num', text: String(total - decided) }), ` ${T.undecidedN}`,
         qs.length ? el('span', { class: 'muted' }, ` · ${qs.filter(optionOf).length} / ${qs.length} ${T.questions.toLowerCase()}`) : null),
       el('div', { class: 'bar', title: [...STATUSES, 'open'].map(k => `${T[k]} ${k === 'open' ? total - decided : count(k)}`).join(' · ') },
         [...STATUSES, 'open'].map(k => { const c = k === 'open' ? total - decided : count(k); return el('span', { style: `width:${100 * c / n}%;background:var(--d-${k})` }); })));
+  }
+
+  // Themes as navigation: how far each has come, and a jump to it. Deciding stays one finding at a time.
+  function themes() {
+    const names = [...new Set(D.findings.map(f => f.theme))];
+    const nav = $('#themes'); nav.hidden = names.length < 2; if (nav.hidden) return;
+    $('#themes-h').textContent = T.themesH; $('#themes-lede').textContent = T.themesLede;
+    const list = $('#theme-list'); list.replaceChildren();
+    const pick = t => { state.theme = state.theme === t ? null : t; themes(); render(); $('#views').scrollIntoView({ behavior: 'smooth' }); };
+    for (const t of names) {
+      const fs = D.findings.filter(f => f.theme === t), done = fs.filter(statusOf).length;
+      list.append(el('button', { type: 'button', class: 'theme-btn' + (done === fs.length ? ' done' : ''), 'aria-pressed': String(state.theme === t), onclick: () => pick(t) },
+        el('span', { class: 'theme-name', text: t }), el('span', { class: 'theme-count num', text: `${done} / ${fs.length}` }),
+        el('span', { class: 'theme-bar' }, el('i', { style: `width:${100 * done / fs.length}%` }))));
+    }
+    if (state.theme) list.append(el('button', { type: 'button', class: 'link-btn', onclick: () => pick(state.theme) }, T.allThemes));
   }
 
   // Background numbers, shown once inside the "Overview" fold.
@@ -421,12 +455,14 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
       card.append(el('div', { class: 'opts', role: 'group', 'aria-label': q.question }, q.options.map(o => el('div', { class: 'opt' + (cur === o.key ? ' chosen' : '') },
         el('div', { class: 'opt-head' }, el('span', { class: 'lbl2', text: `${o.key.toUpperCase()}. ${o.label}` }), o.recommended ? el('span', { class: 'rec', text: T.recommended }) : null),
         o.detail ? el('p', { class: 'sub', text: o.detail }) : null,
-        o.mockup ? mockupFrame(o.mockup) : null,
+        o.mockup ? mockupView(o.mockup) : null,
+        o.madeUp ? el('p', { class: 'made-up', text: T.madeUp + o.madeUp }) : null,
+        o.mockupView ? mockupFold(T.inFullView, o.mockupView) : null,
         el('button', { id: 'o-' + q.id + '-' + o.key, class: 'pick', type: 'button', 'aria-pressed': String(cur === o.key), disabled: canWrite ? null : 'disabled', onclick: () => saveAnswer(q.id, { option: optionOf(q) === o.key ? null : o.key }) }, cur === o.key ? T.chosen : T.choose)))));
       const [note, addNote] = noteField('q:' + q.id, 'qnote-' + q.id, a.note, v => saveAnswer(q.id, { note: v }));
       const foot = el('div', { class: 'decide-foot' }, el('span', {}), el('span', { class: 'foot-actions' }, addNote, comments ? el('button', { class: 'link-btn', onclick: () => comments.openComposer({ element: card }).catch(() => {}) }, T.comment) : null));
       card.append(note, foot);
-      whoLine(foot.firstChild, a);
+      saveLine(foot.firstChild, 'answers', q.id, a);
       list.append(card);
     }
   }
@@ -490,18 +526,21 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
     return [ta, btn];
   }
 
+  const isImage = f => /\.(jpe?g|png|webp)$/i.test(f);
+  const mockupView = file => isImage(file) ? el('img', { class: 'zoom', src: file, alt: '', loading: 'lazy' }) : mockupFrame(file);
+
   // Mockups inside a finding fold away; the frame is built the first time it opens.
   const mockOpen = new Set();
   function mockupFold(label, file) {
     const d = el('details', { class: 'mini' }, el('summary', { text: label }));
-    const build = () => { if (!d.dataset.built) { d.dataset.built = '1'; d.append(mockupFrame(file)); } };
+    const build = () => { if (!d.dataset.built) { d.dataset.built = '1'; d.append(mockupView(file)); } };
     d.addEventListener('toggle', () => { if (d.open) { mockOpen.add(file); build(); } else mockOpen.delete(file); });
     if (mockOpen.has(file)) { d.open = true; build(); }
     return d;
   }
 
-  const filtered = () => state.open || state.sev.size < SEV.length || state.status !== 'all' || state.source !== 'all' || state.history !== 'all';
-  const visible = f => state.sev.has(f.severity) && (state.view === 'all' || f.view === state.view)
+  const filtered = () => !!state.theme || state.open || state.sev.size < SEV.length || state.status !== 'all' || state.source !== 'all' || state.history !== 'all';
+  const visible = f => (!state.theme || f.theme === state.theme) && state.sev.has(f.severity) && (state.view === 'all' || f.view === state.view)
     && (!state.open || isOpen(f))
     && (state.source === 'all' || f.source === state.source)
     && (state.history === 'all' || f.history === state.history)
@@ -580,7 +619,10 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
     if (f.question && questionById(f.question)) card.append(el('p', { class: 'qlink' }, `${T.decidedIn}: `, el('a', { href: '#q-' + f.question, text: questionById(f.question).question })));
     const extras = [
       f.mockup?.after ? mockupFold(`${T.showMockup} · ${T.after}`, f.mockup.after) : null,
+      f.mockup?.afterView ? mockupFold(`${T.inFullView} · ${T.after}`, f.mockup.afterView) : null,
       f.mockup?.before ? mockupFold(`${T.showMockup} · ${T.before}`, f.mockup.before) : null,
+      f.mockup?.beforeView ? mockupFold(`${T.inFullView} · ${T.before}`, f.mockup.beforeView) : null,
+      f.mockup?.madeUp ? el('p', { class: 'made-up', text: T.madeUp + f.mockup.madeUp }) : null,
       f.rule ? el('details', { class: 'mini' }, el('summary', { text: `${T.ruleL} ${f.rule.ref ?? ''}`.trim() }),
         el('div', { class: 'rule' }, el('div', {}, el('b', { text: T.saysL }), f.rule.says), el('div', {}, el('b', { text: T.doesL }), f.rule.does))) : null,
     ].filter(Boolean);
@@ -602,27 +644,52 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
         el('span', { class: 'rec-k', text: T.recHint.replace(/[:\s]+$/, '') }),
         el('span', { class: 'rec-v', text: T[f.suggested] }),
         f.suggestedWhy ? el('span', { class: 'rec-why', text: f.suggestedWhy }) : null) : null,
-      el('div', { class: 'seg', role: 'group', 'aria-label': T.status }, STATUSES.map(k => el('button', { id: 's-' + f.id + '-' + k, type: 'button', class: k === f.suggested ? 'sugg' : '', style: `--dc:var(--d-${k})`, 'aria-pressed': String(cur === k), disabled: canWrite ? null : 'disabled', onclick: () => save(f.id, { status: k }) }, T[k]))),
+      el('div', { class: 'seg', role: 'group', 'aria-label': T.status }, STATUSES.map(k => el('div', { class: 'seg-item' },
+        el('button', { id: 's-' + f.id + '-' + k, type: 'button', style: `--dc:var(--d-${k})`, 'aria-pressed': String(cur === k), disabled: canWrite ? null : 'disabled', onclick: () => save(f.id, { status: k }) }, T[k]),
+        k === f.suggested ? el('span', { class: 'rec-tag', text: T.recTag }) : null))),
+      d.via && cur === 'fix' ? el('p', { class: 'via' }, `${T.fix} ${T.via} `, el('a', { href: '#q-' + d.via.split(' ')[0], text: d.via })) : null,
       note, foot);
-    whoLine(foot.firstChild, d);
+    saveLine(foot.firstChild, 'decisions', f.id, d);
     return block;
   }
 
-  async function whoLine(span, d) {
+  const saveState = {};
+  async function saveLine(span, coll, id, d) {
+    const st = saveState[coll + '/' + id];
+    span.className = 'save' + (st === 'error' ? ' failed' : '');
+    if (st === 'saving') { span.textContent = T.saving; return; }
+    if (st === 'error') { span.textContent = T.saveFailed; return; }
     if (!d?.at) { span.textContent = ''; return; }
     let name = '';
     try { if (user && d.by) { const ps = await user.profiles([d.by]); name = ps[d.by]?.name || ''; } } catch {}
-    span.textContent = `${name || T.someone} · ${new Date(d.at).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`;
+    span.textContent = `${T.saved} · ${name || T.someone} · ${new Date(d.at).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`;
+  }
+  function showSave(coll, id) {
+    const card = document.getElementById((coll === 'answers' ? 'q-' : 'f-') + id);
+    const span = card?.querySelector('.decide-foot > span:first-child');
+    if (span) saveLine(span, coll, id, (coll === 'answers' ? answers : decisions)[id]);
   }
 
   async function write(coll, id, cur, patch) {
-    if (!db) return;
-    const next = { ...cur, ...patch, by: me, at: new Date().toISOString() };
-    try { await db.collection(coll).doc(id).set(next); }
-    catch (e) { showBanner(e?.code === 'not_granted' ? T.readOnly : T.notSaved); }
+    if (!db) return false;
+    const key = coll + '/' + id, next = { ...cur, ...patch, by: me, at: new Date().toISOString() };
+    saveState[key] = 'saving'; showSave(coll, id);
+    try { await db.collection(coll).doc(id).set(next); delete saveState[key]; (coll === 'answers' ? answers : decisions)[id] = next; showSave(coll, id); return true; }
+    catch (e) { saveState[key] = 'error'; showSave(coll, id); showBanner(e?.code === 'not_granted' ? T.readOnly : T.notSaved); return false; }
   }
-  const save = (id, patch) => write('decisions', id, { status: decisions[id]?.status ?? null, note: decisions[id]?.note ?? '' }, patch);
-  const saveAnswer = (id, patch) => write('answers', id, { option: answers[id]?.option ?? null, note: answers[id]?.note ?? '' }, patch);
+  const decisionOf = id => ({ status: decisions[id]?.status ?? null, note: decisions[id]?.note ?? '', via: decisions[id]?.via ?? null });
+  // A status the user clicks is their own decision, so it drops any link to a question's answer.
+  const save = (id, patch) => write('decisions', id, decisionOf(id), 'status' in patch ? { ...patch, via: null } : patch);
+  // Answering a question settles the findings that wait on it: undecided or discuss findings become fix
+  // per the chosen option. Changing the answer moves them along; clearing it hands them back undecided.
+  async function saveAnswer(id, patch) {
+    if (!(await write('answers', id, { option: answers[id]?.option ?? null, note: answers[id]?.note ?? '' }, patch)) || !('option' in patch)) return;
+    for (const f of D.findings.filter(x => x.question === id)) {
+      const d = decisionOf(f.id), fromAnswer = d.via?.startsWith(id + ' ');
+      if (patch.option && (!d.status || d.status === 'discuss' || fromAnswer)) await write('decisions', f.id, d, { status: 'fix', via: `${id} ${patch.option}` });
+      else if (!patch.option && fromAnswer) await write('decisions', f.id, d, { status: null, via: null });
+    }
+  }
 
   function showBanner(t) { const b = $('#banner'); b.textContent = t; b.hidden = false; }
 
@@ -635,14 +702,14 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
     for (const f of [...rows].sort((a, b) => (a.category ?? '').localeCompare(b.category ?? ''))) t.append(el('tr', {}, el('td', { text: f.category ?? '' }), el('td', { class: 'mono', text: viewById(f.view) ? viewTitle(viewById(f.view)) : f.view }), el('td', { text: f.rule.says }), el('td', { text: f.rule.does }), el('td', { class: 'mono', text: f.rule.ref ?? '' })));
   }
 
-  function renderAll() { summary(); questions(); render(); }
+  function renderAll() { summary(); themes(); questions(); render(); }
   overview(); heat(); controls(); drift(); renderAll();
 
   // After a decision, update the cards in place. Only filters that hide decided items need a full render.
   function refresh() {
     if (state.open || state.status !== 'all') { keepPlace(renderAll); return; }
     keepPlace(() => {
-      summary();
+      summary(); themes();
       for (const q of D.questions ?? []) {
         const card = document.getElementById('q-' + q.id); if (!card) continue;
         const cur = optionOf(q);
@@ -652,7 +719,7 @@ table.drift { border-collapse: collapse; width: 100%; font-size: 14px; min-width
           o.classList.toggle('chosen', on); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? T.chosen : T.choose;
         });
         const note = card.querySelector('textarea'); if (note !== document.activeElement) note.value = answers[q.id]?.note ?? '';
-        whoLine(card.querySelector('.decide-foot').firstChild, answers[q.id]);
+        saveLine(card.querySelector('.decide-foot').firstChild, 'answers', q.id, answers[q.id]);
       }
       for (const f of D.findings) {
         const card = document.getElementById('f-' + f.id);

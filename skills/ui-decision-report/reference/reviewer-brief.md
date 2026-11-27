@@ -13,7 +13,10 @@ from <repo-root>, then follow <impeccable-dir>/reference/critique.md
 load, personas and P0–P3 severities. You are Assessment A only: do not run the
 detector. You are a subagent inside a larger round: skip Impeccable's "Persist
 the Snapshot" and "Ask the User" steps, never run `impeccable hooks on`, and
-change no file in the repo. Write only your part file.
+change no file in the repo. Write only your part file. You may open menus and
+dialogs, but never confirm a destructive action (Delete, Remove, Archive,
+Confirm, Ta bort, Radera, Bekräfta), not even against a local database: cancel
+the dialog and judge what you saw.
 
 Views in your area (<area>), each one route as one role in one state:
 <for each view: id, label, role, state, URL, source files, screenshots by viewport:
@@ -55,7 +58,9 @@ state, job, inventory, summary, strengths, scores) and `findings`, with
 `source: "critique"`, a `theme`, a `suggested` status with `suggestedWhy`, and
 for single-element findings a CSS `selector` plus the `viewport` of the screenshot
 it shows in. Add `questionCandidates` (array of {question, why, findings,
-options: [{label, detail}]}) for design choices you would leave to the owner.
+options: [{label, detail}]}) for design choices you would leave to the owner;
+`findings` lists the ids of every finding of yours the answer settles, and is
+never empty.
 
 You are done when every view in your area has job, inventory, scores and a
 summary, and every problem you saw is a finding with why, fix, severity, theme
@@ -75,6 +80,9 @@ mobile) and Impeccable's audit on the views below. Impeccable is installed at
 <impeccable-dir>/reference/audit.md. You are a subagent inside a larger round:
 skip Impeccable's "Persist the Snapshot" and "Ask the User" steps, never run
 `impeccable hooks on`, and change no file in the repo. Write only your part file.
+You may open menus and dialogs, but never confirm a destructive action (Delete,
+Remove, Archive, Confirm, Ta bort, Radera, Bekräfta), not even against a local
+database: cancel the dialog and judge what you saw.
 
 Views: <all views in scope with URLs, roles, source files and screenshots>.
 <sessions, design rules, locked brand and follow-up rules as for area reviewers>
@@ -95,11 +103,12 @@ detector false positives.
 
 ```
 You build static mockups for <project>'s design review. For each item below,
-write one standalone HTML file that shows the proposed change on the real view.
+write one standalone HTML file that shows the proposed change on the real view,
+then cut out the changed part as an image.
 
-Items: <for each: output path under <round-dir>/mockups/, the finding or question
-option it shows, its fix or option text, the view's screenshot path, and the
-view's source files>.
+Items: <for each: the full-view path (…-vy.html) and the zoom path (….jpg) under
+<round-dir>/mockups/, the finding or question option it shows, its fix or option
+text, the view's screenshot path, and the view's source files>.
 
 Project look: tokens from <token or theme files>, fonts from <font source>.
 Where the app has several themes, match the one the screenshots show: read the
@@ -111,17 +120,26 @@ fallback stack.
 Rules:
 - One self-contained file: inline CSS, no scripts, no other external requests.
 - Real content: the labels, data and copy from the screenshot, not lorem ipsum.
+  Anything you have to invent (a date, a name, an extra row) you list for the
+  item, so the report can print it as invented.
 - Show the whole view the change lives in, with the change in place, so it reads
   in context. Change only what the item proposes.
 - Responsive: it must read right at 390 px and at 1440 px wide, with nothing
   scrolling sideways.
 - Write UI text in the app's language.
 
-Check each file with
-`node <skill-dir>/scripts/capture.mjs snap <file> <scratch-dir>/<name>.png 1440`
-and again at 390,
-look at both images, and fix what is off.
+Check each full view with
+`node <skill-dir>/scripts/capture.mjs snap <file> <round-dir>/.work/snaps/<name>.png 1440`
+and again at 390, look at both images, and fix what is off. Then cut the zoom:
+`node <skill-dir>/scripts/capture.mjs zoom <file> <zoom.jpg> <width> <selector> [pad]`,
+at the width where the change shows best. Cut the other options of the same
+question with the rectangle the first cut prints and pad 0, unless they change a
+different place. Look at each zoom: the change must fill it.
 
-You are done when every file exists and both renders look right. Reply with the
-list of files.
+If you generate the files with a script, keep the script in
+<round-dir>/.work/mockups/, so the work can be rerun if you are stopped.
+
+You are done when every full view and zoom exists and looks right. Reply with
+one line per item: the zoom, the full view, and what you invented ("none" when
+nothing).
 ```

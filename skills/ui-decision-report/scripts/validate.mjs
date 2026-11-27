@@ -8,6 +8,8 @@ const VERIFICATION = ['done', 'partial', 'missing', 'regression'];
 const ID = /^[a-z0-9][a-z0-9-]*$/;
 
 const isText = v => typeof v === 'string' && v.trim().length > 0;
+const isImage = f => typeof f === 'string' && /\.(jpe?g|png|webp)$/i.test(f);
+export { isImage };
 const isPct = v => typeof v === 'number' && v >= 0 && v <= 100;
 
 export function validate(data, fileExists) {
@@ -54,6 +56,9 @@ export function validate(data, fileExists) {
       if (!isText(o.key) || !isText(o.label)) err(`question ${q.id} has an option without key or label`);
       if (o.mock !== undefined) err(`question ${q.id} option ${o.key} uses "mock"; use a "mockup" file instead`);
       if (o.mockup !== undefined) file(`question ${q.id} option ${o.key} mockup`, o.mockup);
+      if (o.madeUp !== undefined && !isText(o.madeUp)) err(`question ${q.id} option ${o.key} madeUp must be text`);
+      if (o.mockupView !== undefined) file(`question ${q.id} option ${o.key} mockupView`, o.mockupView);
+      if (o.mockupView !== undefined && !isImage(o.mockup)) err(`question ${q.id} option ${o.key} has mockupView, so its mockup must be the zoomed image`);
     }
   }
   const findingIds = new Set();
@@ -86,6 +91,9 @@ export function validate(data, fileExists) {
     for (const id of f.appliesTo ?? []) if (!viewIds.has(id)) err(`${at} appliesTo unknown view "${id}"`);
     if (f.mockup?.before !== undefined) file(`${at} mockup.before`, f.mockup.before);
     if (f.mockup?.after !== undefined) file(`${at} mockup.after`, f.mockup.after);
+    for (const k of ['beforeView', 'afterView']) if (f.mockup?.[k] !== undefined) file(`${at} mockup.${k}`, f.mockup[k]);
+    if (f.mockup?.madeUp !== undefined && !isText(f.mockup.madeUp)) err(`${at} mockup.madeUp must be text`);
+    if (f.finalFix !== undefined && !isText(f.finalFix)) err(`${at} finalFix must be text`);
     if (f.before !== undefined) file(`${at} before`, f.before);
     if (f.after !== undefined) file(`${at} after`, f.after);
   }
